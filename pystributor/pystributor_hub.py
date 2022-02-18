@@ -28,6 +28,8 @@ def get_task():
 
 def super_calculator():
     HOST = "127.0.0.1"
+    #HOST = "192.168.1.46"#Laptop
+    #HOST = "192.168.1.70"#Desktop pc
     PORT = 1337
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
