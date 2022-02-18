@@ -1,6 +1,3 @@
-#!/usr/bin/python3
-
-
 """
 worker task is defined with functions bound to task variable. see trivial example with is_prime()
 """

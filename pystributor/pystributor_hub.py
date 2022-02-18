@@ -30,6 +30,9 @@ def get_args():
     return args
 
 
+def get_pool():
+    """returns workers in some form. wololoo."""
+
 
 
 def super_calculator():
