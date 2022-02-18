@@ -2,8 +2,7 @@
 
 
 """
-Usage: define your task in a way that can be passed to task() function. see
-trivial is_prime for example.
+worker task is defined with functions bound to task variable. see trivial example with is_prime()
 """
 
 

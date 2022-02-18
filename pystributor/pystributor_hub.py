@@ -2,23 +2,31 @@
 
 
 from cryptography.fernet import Fernet
+from pystributor_task import task
+from inspect import getsource
 from threading import Thread
 from time import sleep
 import socket
 
-from pystributor_task import task
+
+
+
+
+
+
 
 ENCRYPTION_KEY = "xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="
+
 f = Fernet(ENCRYPTION_KEY)
 
 
 
-
+def get_task():
+    """Returns task a string so it can be sent to workers"""
+    return getsource(task)
 
 
 def super_calculator():
-
-
     HOST = "127.0.0.1"
     PORT = 1337
 
@@ -38,21 +46,10 @@ def super_calculator():
 
 
 
-
 def listener():
     while True:
         print("[Hub][Con Listener]: doing nothing...")
         sleep(10)
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -85,11 +82,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-# supercalculator
-# listener
