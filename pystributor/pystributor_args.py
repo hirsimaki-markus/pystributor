@@ -1,16 +1,19 @@
 """
 task arguments defined with any python object that can be converted to list of tuples.
-see trivial example with list and generator
+tuples are used to support multipe arguments. see get_numbers() for example.
 """
 
 
 
-def example_task_arguments():
-    """Returns list of 20 tuples, each containing a number. Runs from 1 to 20"""
-    num = 1
-    while num < 21:
-        yield (num,) # return tuples with size of one
-        num += 1
+def get_numbers():
+    """Returns list of 20 tuples, each containing a number. Runs from 1 to 20
+    assigning a list with hard coded items to args would also work.
+    """
+    accum = []
+    for i in range(1, 21):
+        accum.append((i,))
+    return accum
 
 
-args = list()
+args = get_numbers() # get_numbes() could also be hard coded list here
+

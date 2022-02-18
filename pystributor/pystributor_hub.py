@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-
+from pystributor_args import args
 from cryptography.fernet import Fernet
 from pystributor_task import task
 from inspect import getsource
@@ -24,6 +24,12 @@ f = Fernet(ENCRYPTION_KEY)
 def get_task():
     """Returns task a string so it can be sent to workers"""
     return getsource(task)
+
+def get_args():
+    """returns list of tuples to be distirbuted to workers"""
+    return args
+
+
 
 
 def super_calculator():
@@ -65,6 +71,15 @@ def main():
     t2.start()
 
     print("[Hub][Main Process]: Started daemons")
+
+
+    print()
+    print()
+    print(get_task())
+    print()
+    print(get_args())
+    print()
+    print()
 
 
     while True:
