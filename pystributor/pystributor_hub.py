@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 
 
-
+from cryptography.fernet import Fernet
 from threading import Thread
 from time import sleep
 import socket
 
 from pystributor_task import task
 
-
+ENCRYPTION_KEY = "xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="
+f = Fernet(ENCRYPTION_KEY)
 
 
 
@@ -25,9 +26,12 @@ def super_calculator():
         sock.connect((HOST, PORT))
         while True:
             message = input("[Hub][S Calculator]: Something to send from hub to worker: ")
-            sock.sendall(message.encode('utf-8'))
+            message = message.encode('utf-8')
+            encypted_message = f.encrypt(message)
+            sock.sendall(encypted_message)
             data = sock.recv(1024)
             print("[Hub][S Calculator]: Received stuff back from worker", repr(data))
+            print("[Hub][S Calculator]: Decrypted version: ", f.decrypt(data))
 
 
 

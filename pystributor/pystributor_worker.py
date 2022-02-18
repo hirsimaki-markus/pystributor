@@ -1,12 +1,13 @@
 #!/usr/bin/python3
 
 
-
+from cryptography.fernet import Fernet
 from threading import Thread
 from time import sleep
 import socket
 
-
+ENCRYPTION_KEY = "xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="
+f = Fernet(ENCRYPTION_KEY)
 
 def calculator():
     while True:
@@ -25,13 +26,17 @@ def listener():
         sock.listen()
         connection, address = sock.accept() # this is blocking. now waiting for socket connection
         with connection:
-            print("Connected by", address)
+            print("[Worker][Listener]: Connected by", address)
             while True:
                 data = connection.recv(1024)
                 if not data:
                     break
-                connection.sendall(data)
-                print("sent something back t. worker")
+                print("[Worker][Listener]: Received following data:", data)
+                print("[Worker][Listener]: Trying to decrypt...")
+                decrypted_data = f.decrypt(data)
+                print("[Worker][Listener]: Decrypted data:", decrypted_data)
+                connection.sendall(f.encrypt(decrypted_data))
+                print("[Worker][Listener]: Sent the decryped message back to the hub t. worker")
 
 
 
