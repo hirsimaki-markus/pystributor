@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-from pystributor_args import args
+#from pystributor_args import args
 from cryptography.fernet import Fernet
-from pystributor_task import task
-from inspect import getsource
+#from pystributor_task import task
+#from inspect import getsource
 from threading import Thread
 from time import sleep
 import socket
@@ -21,7 +21,7 @@ f = Fernet(ENCRYPTION_KEY)
 
 
 
-def get_task():
+'''def get_task():
     """Returns task a string so it can be sent to workers"""
     return getsource(task)
 
@@ -31,15 +31,15 @@ def get_args():
 
 
 def get_pool():
-    """returns workers in some form. wololoo."""
+    """returns workers in some form. wololoo."""'''
 
 
 
 def super_calculator():
-    HOST = "127.0.0.1"
+    #HOST = "127.0.0.1"
     #HOST = "192.168.1.46"#Laptop
-    #HOST = "192.168.1.70"#Desktop pc
-    PORT = 1337
+    HOST = "192.168.1.70"#Desktop pc
+    PORT = 6337
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((HOST, PORT))
@@ -78,13 +78,13 @@ def main():
     print("[Hub][Main Process]: Started daemons")
 
 
-    print()
+    '''print()
     print()
     print(get_task())
     print()
     print(get_args())
     print()
-    print()
+    print()'''
 
 
     while True:
