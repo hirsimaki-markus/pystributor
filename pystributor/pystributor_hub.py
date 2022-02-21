@@ -1,8 +1,11 @@
 #!/usr/bin/python3
 
 
-from socket import socket as get_socket
+from socket import socket as get_socket, SHUT_RDWR
 from os import system
+from threading import Thread
+from time import sleep
+import atexit
 
 
 
@@ -16,6 +19,12 @@ def clear_screen():
     """Clear screen on unix and windows platforms"""
     _ = system("cls||clear")
 
+def clear_connections(socket):
+    """Clear up connections"""
+    socket.close()
+
+
+
 def discover_workers(socket):
     """Begin listening for workers. Adds connections to pool until manually stopped. Returns pool"""
     print("Building worker pool. Waiting for workers to come online.\n")
@@ -28,7 +37,7 @@ def discover_workers(socket):
         while True:
             connection, address = socket.accept()
             pool.append((connection, address))
-            print("Added worker to pool. Pool size is now", len(pool), "Worker address is", address[0] + ":" + str(address[1]))
+            print("Added worker to pool. Worker address is", address[0] + ":" + str(address[1]) + ".", "Pool size is now", len(pool), )
     except KeyboardInterrupt:
         print("\n\nDone building worker pool. Pool size:", len(pool))
     return pool
@@ -38,11 +47,19 @@ def discover_workers(socket):
 
 
 def listener():
-    pass
+    while True:
+        sleep(1)
 
 
-def super_calculator():
-    pass
+def super_calculator(pool):
+    while True:
+        for connection, address in pool:
+            msg = "Test message to " + address[0] + ":" + str(address[1])
+            connection.sendall(msg.encode("utf-8"))
+            print("sending")
+        sleep(5)
+        print()
+
 
 
 def main():
@@ -53,30 +70,21 @@ def main():
 
     pool = discover_workers(socket)
 
-    while pool:
-        connection, address = pool.pop()
-        print(connection, address, "\n")
-        connection.close()
+    atexit.register(clear_connections, socket, pool)
+
+    t_suprcalc = Thread(target=super_calculator, args=[pool])
+    t_listener = Thread(target=listener)
+    t_suprcalc.daemon = True
+    t_listener.daemon = True
+    print("\nStarting daemons. Main thread idle.\n")
+    t_listener.start()
+    t_suprcalc.start()
+
+    while True:
+        sleep(10)
 
 
-    #t1 = Thread(target=super_calculator)
-    #t2 = Thread(target=listener)
-    #t1.daemon = True
-    #t2.daemon = True
-    #t1.start()
-    #t2.start()
-    #while True:
-    #    print("main thead idling")
-    #    sleep(10)
-    #t1.join()
-    #t2.join()
-
-
-
-
-
-
-
+    print("main thread end?")
 
 if __name__ == "__main__":
     main()
@@ -104,6 +112,8 @@ if __name__ == "__main__":
 #sock.setblocking(False)
 #sel.register(sock, selectors.EVENT_READ, data=None)
 
+#t1.join()
+#t2.join()
 
 #############################[ trash code ]################################
 #def get_task():
