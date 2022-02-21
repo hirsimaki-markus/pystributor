@@ -8,7 +8,7 @@ import socket
 
 ENCRYPTION_KEY = "xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="
 HOST = "127.0.0.1"
-PORT = 1337
+PORT = 1338
 #HOST = "192.168.1.46"#Laptop
 #HOST = "192.168.1.70"#Desktop pc
 
@@ -28,19 +28,32 @@ def listener():
     #    print("listenre doing nothing")
     #    sleep(10)
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.connect((HOST, PORT))
-        while True:
+    #with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+    #    sock.connect((HOST, PORT))
+    #    while True:
             #message = input("[Hub][S Calculator]: Something to send from hub to worker: ")
             #message = message.encode('utf-8')
             #encypted_message = f.encrypt(message)
 
-            data = sock.recv(4096)
-            sock.sendall(data)
+            #data = sock.recv(4096)
+            #sock.sendall(data)
 
             #print("[Hub][S Calculator]: Received stuff back from worker", repr(data))
             #print("[Hub][S Calculator]: Decrypted version: ", f.decrypt(data))
 
+
+    echoSocket = socket.socket()
+    echoSocket.bind(("127.0.0.1", 1338))
+    echoSocket.listen()
+    while(True):
+        (clientSocket, clientAddress) = echoSocket.accept()
+        while(True):
+            data = clientSocket.recv(1024)
+            print("At Server: %s"%data)
+            if(data!=b''):
+                # Send back what you received
+                clientSocket.send(data)
+                break
 
 
 
