@@ -78,8 +78,8 @@ def main():
     global server_died_suddenly
     global server_requesting_shutdown
     initialize_connections()
-
     while True:
+        sleep(5)
         if server_died_suddenly == True:
             server_died_suddenly = False
             initialize_connections()
