@@ -51,12 +51,16 @@ def discover_workers(socket):
 
 
 def listener(pool):
+    print("123123")
     while True:
         for connection, address in pool:
+            print("asdasdasd")
             msg = connection.recv(1024)
+
+
             print("got message yo:", msg)
         sleep(5)
-        print()
+        print("listener here yo")
 
 
 
