@@ -4,14 +4,22 @@
 
 
 import socket
+from os import system
 
+HOST = '127.0.0.1'
+PORT = 1337
 
+def clear_screen():
+    """Clear screen on unix and windows platforms"""
+    _ = system("cls||clear")
+
+clear_screen()
+print("Worker started. Waiting for messages.")
 
 ClientSocket = socket.socket()
-host = '127.0.0.1'
-port = 1337
 
-ClientSocket.connect((host, port))
+
+ClientSocket.connect((HOST, PORT))
 
 while True:
     response = ClientSocket.recv(1024) # this is blocking operation. socket is set to blocking.
