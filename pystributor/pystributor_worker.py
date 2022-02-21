@@ -23,7 +23,8 @@ ClientSocket.connect((HOST, PORT))
 
 while True:
     response = ClientSocket.recv(1024) # this is blocking operation. socket is set to blocking.
-    print("Got message from hub:", response.decode('utf-8'))
+    ClientSocket.sendall(response)
+    print("Got message from hub and sent it back:", response.decode('utf-8'))
 
 
 

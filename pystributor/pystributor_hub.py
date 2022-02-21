@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 
-from socket import socket as get_socket, timeout
+from socket import socket as get_socket
 from os import system
 from threading import Thread
 from time import sleep
@@ -36,29 +36,29 @@ def discover_workers(socket):
     pool = []
 
     socket.listen(0) # backlog = 0
-    socket.settimeout(0.1) # compability with windows. allow timeout every 0.2 to make ctrl+c work.
-
-    while True:
-        try:
+    try:
+        while True:
             connection, address = socket.accept()
             pool.append((connection, address))
             print("Added worker to pool. Worker address is", address[0] + ":" + str(address[1]) + ".", "Pool size is now", len(pool), )
-        except KeyboardInterrupt:
-            print("\n\nDone building worker pool. Pool size:", len(pool))
-            socket.settimeout(None)
-            break
-        except timeout:
-            pass # compability with windows. allow timeout every 0.2 to make ctrl+c work.
-
+    except KeyboardInterrupt:
+        print("\n\nDone building worker pool. Pool size:", len(pool))
     return pool
+    # TODO: WINDOWS CTRL+C EI TOIMI. AAAAAAAAA. SAAATANAAAAA. socket.accept blokaa
 
 
 
 
 
-def listener():
+def listener(pool):
     while True:
-        sleep(1)
+        for connection, address in pool:
+            msg = connection.recv(1024)
+            print("got message yo:", msg)
+        sleep(5)
+        print()
+
+
 
 
 def super_calculator(pool):
@@ -66,7 +66,7 @@ def super_calculator(pool):
         for connection, address in pool:
             msg = "Test message to " + address[0] + ":" + str(address[1])
             connection.sendall(msg.encode("utf-8"))
-            print("sending")
+            print("sent:", msg)
         sleep(5)
         print()
 
@@ -83,7 +83,7 @@ def main():
     atexit.register(clear_connections, socket)
 
     t_suprcalc = Thread(target=super_calculator, args=[pool])
-    t_listener = Thread(target=listener)
+    t_listener = Thread(target=listener, args=[pool])
     t_suprcalc.daemon = True
     t_listener.daemon = True
     print("\nStarting daemons. Main thread idle.\n")
