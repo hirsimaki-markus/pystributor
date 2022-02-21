@@ -3,10 +3,31 @@
 
 from socket import socket as get_socket
 from os import system
+from sqlite3 import connect
 from threading import Thread
 from time import sleep
 import atexit
 
+
+#########selector test####
+import selectors
+MY_SELECTOR = selectors.DefaultSelector()
+def SELECTOR_READ(connection, mask):
+    #client_address = connection.getpeername()
+    #print('read({})'.format(client_address))
+    data = connection.recv(1024)
+    if data:
+        # A readable client socket has data
+        print("received stuff. awesome.", data)
+        #print('  received {!r}'.format(data))
+    else:
+        # Interpret empty result as closed connection
+        print('  closing')
+        MY_SELECTOR.unregister(connection)
+        connection.close()
+        # Tell the main loop to stop
+        #keep_running = False
+################
 
 
 
@@ -17,14 +38,6 @@ HOST = "127.0.0.1"
 PORT = 1337
 #HOST = "0.0.0.0" # listen to all incoming traffic
 
-
-def clear_screen():
-    """Clear screen on unix and windows platforms"""
-    _ = system("cls||clear")
-
-def clear_connections(socket):
-    """Clear up connections"""
-    socket.close()
 
 
 
@@ -38,29 +51,41 @@ def discover_workers(socket):
     socket.listen(0) # backlog = 0
     try:
         while True:
-            connection, address = socket.accept()
+            try:
+                connection, address = socket.accept()
+            except BlockingIOError: # socket set to nonblocking. busy wait with try except, otherwise socket.accept block even ctrl+c (on windows)
+                continue
+
+
+            # selector test begin
+            connection.setblocking(False)
+            MY_SELECTOR.register(connection, selectors.EVENT_READ, SELECTOR_READ) # last argument can be anything to be associated with the file object. here its callback.
+
+            # selector test end
+
+
             pool.append((connection, address))
             print("Added worker to pool. Worker address is", address[0] + ":" + str(address[1]) + ".", "Pool size is now", len(pool), )
     except KeyboardInterrupt:
         print("\n\nDone building worker pool. Pool size:", len(pool))
+
+
+
+
     return pool
-    # TODO: WINDOWS CTRL+C EI TOIMI. AAAAAAAAA. SAAATANAAAAA. socket.accept blokaa
 
 
 
 
 
-def listener(pool):
-    print("123123")
+def listener():
+    print("listener online!")
     while True:
-        for connection, address in pool:
-            print("asdasdasd")
-            msg = connection.recv(1024)
+        for selectorkey, mask in MY_SELECTOR.select(): # this blocks. timeout can be argument.
+            callback = selectorkey.data # data stores arbitrary stuff assosiated with the the filedescriptor
+            connection = selectorkey.fileobj
+            callback(connection, mask)
 
-
-            print("got message yo:", msg)
-        sleep(5)
-        print("listener here yo")
 
 
 
@@ -77,17 +102,19 @@ def super_calculator(pool):
 
 
 def main():
-    clear_screen()
+    _ = system("cls||clear") # clear screen on windows and unix
 
     socket = get_socket()
+    socket.setblocking(False)
     socket.bind((HOST, PORT))
+
 
     pool = discover_workers(socket)
 
-    atexit.register(clear_connections, socket)
+    atexit.register((lambda: socket.close()), socket)
 
     t_suprcalc = Thread(target=super_calculator, args=[pool])
-    t_listener = Thread(target=listener, args=[pool])
+    t_listener = Thread(target=listener, args=[])
     t_suprcalc.daemon = True
     t_listener.daemon = True
     print("\nStarting daemons. Main thread idle.\n")
@@ -104,12 +131,21 @@ if __name__ == "__main__":
     main()
 
 
+
+
+
+
+
+
+
+
+
+
+
 ################[ not trash code]################################
 
 # fernet = Fernet(ENCRYPTION_KEY)
 # ENCRYPTION_KEY = "xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="
-
-
 
 #from pystributor_args import args
 #from cryptography.fernet import Fernet
