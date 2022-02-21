@@ -26,7 +26,7 @@ PORT = 1337
 def initialize_socket():
     """Returns a configured socket"""
     socket = system_socket()
-    socket.setblocking(False)
+    socket.setblocking(False) # must be nonblocking to use ctrl+c in worker discovery
     socket.bind((HOST, PORT))
     return socket
 
@@ -35,9 +35,7 @@ def discover_workers(socket):
     """Begin listening for workers. Adds connections to pool until manually stopped. Returns pool"""
     print("Building worker pool. Waiting for workers to come online.\n")
     print("Press <ctrl+c> to end discovery when enough workers have connected to pool.\n")
-
     pool = []
-
     socket.listen(0) # backlog = 0
     try:
         while True:
@@ -45,25 +43,14 @@ def discover_workers(socket):
                 connection, address = socket.accept()
             except BlockingIOError: # socket set to nonblocking. busy wait with try except, otherwise socket.accept block even ctrl+c (on windows)
                 continue
-
-
-            # selector test begin
-            connection.setblocking(False)
-
-
-            # selector test end
-
-
+            connection.setblocking(False) # must be nonblocking for selector
             pool.append((connection, address))
             print("Added worker to pool. Worker address is", address[0] + ":" + str(address[1]) + ".", "Pool size is now", len(pool), )
     except KeyboardInterrupt:
         print("\n\nDone building worker pool. Pool size:", len(pool))
-
-
     if len(pool) == 0:
         print("\nPool size was 0. Shutting down hub.\n")
         sysexit(1)
-
     return pool
 
 
