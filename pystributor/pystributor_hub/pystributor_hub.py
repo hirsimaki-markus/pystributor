@@ -47,19 +47,19 @@ def listener():
                 data = connection.recv(1024)
                 if not data:
                     break
-                print("[Worker][Listener]: Received following data:", data)
-                print("[Worker][Listener]: Trying to decrypt...")
+                print("[Hub][Listener]: Received following data:", data)
+                print("[Hub][Listener]: Trying to decrypt...")
                 decrypted_data = f.decrypt(data)
-                print("[Worker][Listener]: Decrypted data:", decrypted_data)
+                print("[Hub][Listener]: Decrypted data:", decrypted_data)
                 connection.sendall(f.encrypt(decrypted_data))
-                print("[Worker][Listener]: Sent the decryped message back to the hub t. worker")
+                print("[Hub][Listener]: Sent the decryped message back to the hub t. worker")
 
 
 
 
 def super_calculator():
     while True:
-        print("[Hub][Con Listener]: doing nothing...")
+        print("[Hub][Super Calculator]: doing nothing...")
         sleep(10)
 
 
@@ -76,15 +76,6 @@ def main():
     t2.start()
 
     print("[Hub][Main Process]: Started daemons")
-
-
-    '''print()
-    print()
-    print(get_task())
-    print()
-    print(get_args())
-    print()
-    print()'''
 
 
     while True:

@@ -17,28 +17,21 @@ def calculator():
 
 
 def listener():
-
-    HOST = "0.0.0.0"
+    #HOST = "127.0.0.1"
     #HOST = "192.168.1.46"#Laptop
-    #HOST = "192.168.1.70"#Desktop pc
+    HOST = "192.168.1.70"#Desktop pc
     PORT = 6337
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock: # automagically also closes socket
-        sock.bind((HOST, PORT))
-        sock.listen()
-        connection, address = sock.accept() # this is blocking. now waiting for socket connection
-        with connection:
-            print("[Worker][Listener]: Connected by", address)
-            while True:
-                data = connection.recv(1024)
-                if not data:
-                    break
-                print("[Worker][Listener]: Received following data:", data)
-                print("[Worker][Listener]: Trying to decrypt...")
-                decrypted_data = f.decrypt(data)
-                print("[Worker][Listener]: Decrypted data:", decrypted_data)
-                connection.sendall(f.encrypt(decrypted_data))
-                print("[Worker][Listener]: Sent the decryped message back to the hub t. worker")
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.connect((HOST, PORT))
+        while True:
+            message = input("[Hub][S Calculator]: Something to send from worker to hub: ")
+            message = message.encode('utf-8')
+            encypted_message = f.encrypt(message)
+            sock.sendall(encypted_message)
+            data = sock.recv(1024)
+            print("[Worker][Listener]: Received stuff back from worker", repr(data))
+            print("[Worker][Listener]: Decrypted version: ", f.decrypt(data))
 
 
 
@@ -46,7 +39,7 @@ def listener():
 
 
 def main():
-    print("[Hub][Main Process]: Hub starting")
+    print("[Worker][Main Process]: Worker starting")
 
     t1 = Thread(target=calculator)
     t2 = Thread(target=listener)
@@ -55,7 +48,7 @@ def main():
     t1.start()
     t2.start()
 
-    print("[Hub][Main Process]: Started daemons")
+    print("[Worker][Main Process]: Started daemons")
 
 
     while True:
