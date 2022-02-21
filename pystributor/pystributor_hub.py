@@ -1,33 +1,17 @@
 #!/usr/bin/python3
 
 
-from socket import socket as get_socket
+from socket import socket as system_socket
 from os import system
 from sqlite3 import connect
 from threading import Thread
 from time import sleep
 import atexit
+from sys import exit as sysexit
+from selectors import DefaultSelector, EVENT_READ
 
 
-#########selector test####
-import selectors
-MY_SELECTOR = selectors.DefaultSelector()
-def SELECTOR_READ(connection, mask):
-    #client_address = connection.getpeername()
-    #print('read({})'.format(client_address))
-    data = connection.recv(1024)
-    if data:
-        # A readable client socket has data
-        print("received stuff. awesome.", data)
-        #print('  received {!r}'.format(data))
-    else:
-        # Interpret empty result as closed connection
-        print('  closing')
-        MY_SELECTOR.unregister(connection)
-        connection.close()
-        # Tell the main loop to stop
-        #keep_running = False
-################
+
 
 
 
@@ -39,12 +23,18 @@ PORT = 1337
 #HOST = "0.0.0.0" # listen to all incoming traffic
 
 
+def initialize_socket():
+    """Returns a configured socket"""
+    socket = system_socket()
+    socket.setblocking(False)
+    socket.bind((HOST, PORT))
+    return socket
 
 
 def discover_workers(socket):
     """Begin listening for workers. Adds connections to pool until manually stopped. Returns pool"""
     print("Building worker pool. Waiting for workers to come online.\n")
-    print("Press <ctrl+c> to end discovery and move forward.\n")
+    print("Press <ctrl+c> to end discovery when enough workers have connected to pool.\n")
 
     pool = []
 
@@ -59,7 +49,7 @@ def discover_workers(socket):
 
             # selector test begin
             connection.setblocking(False)
-            MY_SELECTOR.register(connection, selectors.EVENT_READ, SELECTOR_READ) # last argument can be anything to be associated with the file object. here its callback.
+
 
             # selector test end
 
@@ -70,7 +60,9 @@ def discover_workers(socket):
         print("\n\nDone building worker pool. Pool size:", len(pool))
 
 
-
+    if len(pool) == 0:
+        print("\nPool size was 0. Shutting down hub.\n")
+        sysexit(1)
 
     return pool
 
@@ -78,13 +70,28 @@ def discover_workers(socket):
 
 
 
-def listener():
+def listener(pool):
+    connection_selector = DefaultSelector() # used to select connections that have data waiting for read
+
+    for connection, address in pool:
+        connection_selector.register(connection, EVENT_READ)
+
+    def _selector_read_handler(connection, mask):
+        """handles reading data from connections when they are provided by select()"""
+        data = connection.recv(1024)
+        if data: # there must be data; select() gave this connection since it had data to be read
+            print("received stuff. awesome.", data)
+            #print('  received {!r}'.format(data))
+        else: # connection is likely closing since no data
+            print("closing worker connection")
+            connection_selector.unregister(connection)
+            connection.close()
+
     print("listener online!")
     while True:
-        for selectorkey, mask in MY_SELECTOR.select(): # this blocks. timeout can be argument.
-            callback = selectorkey.data # data stores arbitrary stuff assosiated with the the filedescriptor
+        for selectorkey, mask in connection_selector.select(): # this blocks. timeout can be argument. selectorkeys are stuff that has data waiting.
             connection = selectorkey.fileobj
-            callback(connection, mask)
+            _selector_read_handler(connection, mask)
 
 
 
@@ -104,20 +111,18 @@ def super_calculator(pool):
 def main():
     _ = system("cls||clear") # clear screen on windows and unix
 
-    socket = get_socket()
-    socket.setblocking(False)
-    socket.bind((HOST, PORT))
-
+    socket = initialize_socket()
+    atexit.register((lambda socket: socket.close()), socket)
 
     pool = discover_workers(socket)
 
-    atexit.register((lambda: socket.close()), socket)
+
 
     t_suprcalc = Thread(target=super_calculator, args=[pool])
-    t_listener = Thread(target=listener, args=[])
+    t_listener = Thread(target=listener, args=[pool])
     t_suprcalc.daemon = True
     t_listener.daemon = True
-    print("\nStarting daemons. Main thread idle.\n")
+    print("\nHub main thread now idle. Super calculator and listener daemons started.\n")
     t_listener.start()
     t_suprcalc.start()
 
