@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
 
-
-
+import time
+import random
 import socket
 from os import system
 
@@ -22,10 +22,13 @@ ClientSocket = socket.socket()
 ClientSocket.connect((HOST, PORT))
 
 while True:
-    response = ClientSocket.recv(1024) # this is blocking operation. socket is set to blocking.
+    #response = ClientSocket.recv(1024) # this is blocking operation. socket is set to blocking.
+    #input("press enter to stop waiting and send the response")
     #ClientSocket.sendall(response)
-    print("Got message from hub and sent it back:", response.decode('utf-8'))
+    #print("Got message from hub and sent it back:", response.decode('utf-8'))
 
+    asd = input("send some shit: ")
+    ClientSocket.sendall(asd.encode("utf-8"))
 
 
 
