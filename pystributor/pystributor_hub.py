@@ -1,11 +1,14 @@
 #!/usr/bin/python3
 
 
-from socket import socket as get_socket, SHUT_RDWR
+from socket import socket as get_socket, timeout
 from os import system
 from threading import Thread
 from time import sleep
 import atexit
+
+
+
 
 
 
@@ -33,13 +36,20 @@ def discover_workers(socket):
     pool = []
 
     socket.listen(0) # backlog = 0
-    try:
-        while True:
+    socket.settimeout(0.1) # compability with windows. allow timeout every 0.2 to make ctrl+c work.
+
+    while True:
+        try:
             connection, address = socket.accept()
             pool.append((connection, address))
             print("Added worker to pool. Worker address is", address[0] + ":" + str(address[1]) + ".", "Pool size is now", len(pool), )
-    except KeyboardInterrupt:
-        print("\n\nDone building worker pool. Pool size:", len(pool))
+        except KeyboardInterrupt:
+            print("\n\nDone building worker pool. Pool size:", len(pool))
+            socket.settimeout(None)
+            break
+        except timeout:
+            pass # compability with windows. allow timeout every 0.2 to make ctrl+c work.
+
     return pool
 
 
@@ -70,7 +80,7 @@ def main():
 
     pool = discover_workers(socket)
 
-    atexit.register(clear_connections, socket, pool)
+    atexit.register(clear_connections, socket)
 
     t_suprcalc = Thread(target=super_calculator, args=[pool])
     t_listener = Thread(target=listener)
