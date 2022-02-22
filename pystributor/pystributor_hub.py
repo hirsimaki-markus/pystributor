@@ -1,80 +1,83 @@
 #!/usr/bin/python3
 
-
-from socket import socket as system_socket
-from os import system
-from sqlite3 import connect
-from threading import Thread
-from time import sleep
-import atexit
-from sys import exit as sysexit
 from selectors import DefaultSelector, EVENT_READ
+from atexit import register as atexit_register
+from socket import socket as system_socket
+from threading import Thread
+from inspect import getsource
+from time import sleep
+from os import system
 
 
 
-
-
-
-
-
-
-HOST = "127.0.0.1"
+HOST = "0.0.0.0" # listen to all incoming traffic. 127.0.0.1 if localhost only
 PORT = 1337
-#HOST = "0.0.0.0" # listen to all incoming traffic
+
+
+def get_task():
+    """Returns task as a string so it can be distributed to workers"""
+    from pystributor_task import task
+    return getsource(task)
+
+def get_args():
+    """returns list of tuples to be distirbuted to workers as arguments"""
+    from pystributor_args import args
+    return args
+
+
 
 
 def initialize_socket():
     """Returns a configured socket"""
     socket = system_socket()
-    socket.setblocking(False) # must be nonblocking to use ctrl+c in worker discovery
+    socket.setblocking(False) # blocking would prevent ctrl+c on windows
     socket.bind((HOST, PORT))
     return socket
 
 
 def discover_workers(socket):
-    """Begin listening for workers. Adds connections to pool until manually stopped. Returns pool"""
-    print("Building worker pool. Waiting for workers to come online.\n")
-    print("Press <ctrl+c> to end discovery when enough workers have connected to pool.\n")
+    """Waits for workers to connect. Returns worker pool when interrupted"""
     pool = []
+    print("Building worker pool. Waiting for workers to come online.", end="")
+    print(" Start workers now.\n")
+    print("!!! Press <ctrl+c> to stop waiting for more workers to join !!!\n")
     socket.listen(0) # backlog = 0
     try:
         while True:
             try:
                 connection, address = socket.accept()
-            except BlockingIOError: # socket set to nonblocking. busy wait with try except, otherwise socket.accept block even ctrl+c (on windows)
+            except BlockingIOError:
+                # socket is set to nonblocking. error happens in loop
+                # this allows for ctrl+c to work also on windows
                 continue
             connection.setblocking(False) # must be nonblocking for selector
             pool.append((connection, address))
-            print("Added worker to pool. Worker address is", address[0] + ":" + str(address[1]) + ".", "Pool size is now", len(pool), )
+            print("Added worker to pool. Worker address is", address[0] + ":"
+                  + str(address[1]) + ".", "Pool size is now", len(pool), )
     except KeyboardInterrupt:
         print("\n\nDone building worker pool. Pool size:", len(pool))
-    if len(pool) == 0:
-        print("\nPool size was 0. Shutting down hub.\n")
-        sysexit(1)
     return pool
 
 
 
-
-
 def listener(pool):
-    connection_selector = DefaultSelector() # used to select connections that have data waiting for read
-
+    """Handles getting replies from workers"""
+    print("Listener daemon online. Waiting for worker replies.")
+    connection_selector = DefaultSelector()
+    # selector can be queried for file descriptors waiting for I/O operations
+    # one selector will handle up to 1024 workers
     for connection, address in pool:
         connection_selector.register(connection, EVENT_READ)
-
     def _selector_read_handler(connection, mask):
-        """handles reading data from connections when they are provided by select()"""
+        """Handles data read by selector from connections"""
         data = connection.recv(1024)
-        if data: # there must be data; select() gave this connection since it had data to be read
+        if data:
+            # there must be data; select() returns connectons waiting for read
             print("received stuff. awesome.", data)
-            #print('  received {!r}'.format(data))
         else: # connection is likely closing since no data
-            print("closing worker connection")
+            print("Closing worker connection")
             connection_selector.unregister(connection)
             connection.close()
-
-    print("listener online!")
     while True:
         for selectorkey, mask in connection_selector.select(): # this blocks. timeout can be argument. selectorkeys are stuff that has data waiting.
             connection = selectorkey.fileobj
@@ -82,9 +85,9 @@ def listener(pool):
 
 
 
-
-
 def super_calculator(pool):
+    """The brain which distributes tasks to workers in pool"""
+    print("Super calculator daemon online. Distributing tasks to workers.")
     while True:
         for connection, address in pool:
             msg = "Test message to " + address[0] + ":" + str(address[1])
@@ -96,30 +99,19 @@ def super_calculator(pool):
 
 
 def main():
-    _ = system("cls||clear") # clear screen on windows and unix
-
+    print("Starting hub")
     socket = initialize_socket()
-    atexit.register((lambda socket: socket.close()), socket)
-
+    atexit_register((lambda socket: socket.close()), socket)
     pool = discover_workers(socket)
+    print("Hub initialized. Starting daemons.")
+    Thread(target=super_calculator, args=[pool], daemon=True).start()
+    Thread(target=listener, args=[pool], daemon=True).start()
+    while True: sleep(1)
 
 
-
-    t_suprcalc = Thread(target=super_calculator, args=[pool])
-    t_listener = Thread(target=listener, args=[pool])
-    t_suprcalc.daemon = True
-    t_listener.daemon = True
-    print("\nHub main thread now idle. Super calculator and listener daemons started.\n")
-    t_listener.start()
-    t_suprcalc.start()
-
-    while True:
-        sleep(10)
-
-
-    print("main thread end?")
 
 if __name__ == "__main__":
+    _ = system("cls||clear") # clear screen on windows and unix
     main()
 
 
@@ -147,24 +139,10 @@ if __name__ == "__main__":
 #from time import sleep
 #import socket
 
-#sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#sock.bind((HOST, PORT))
-#sock.listen()
-#print('listening on', (host, port))
-#sock.setblocking(False)
-#sel.register(sock, selectors.EVENT_READ, data=None)
 
-#t1.join()
-#t2.join()
 
 #############################[ trash code ]################################
-#def get_task():
-#    """Returns task a string so it can be sent to workers"""
-#    return getsource(task)
 
-#def get_args():
-#    """returns list of tuples to be distirbuted to workers"""
-#    return args
 
 
 #def get_pool():
