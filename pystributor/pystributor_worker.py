@@ -108,18 +108,22 @@ def main():
         packet = recvall_worker(socket)
         # client and server in lockstep > can pick single "message" from stream
         message = loads(packet.decode("utf-8"))
-        if "task" in message:
+        if "task" in message: # sending back back ok since task was received
             print("received task")
             digest_task(message["task"])
             message = {"task": "ok"}
             packet = dumps(message).encode("utf-8")
             socket.sendall(packet)
-        elif "arg" in message:
+        elif "arg" in message: # sending back and answer to an argument
             print("received arg")
-            task_result = task(message["arg"])
-            message = {"arg": task_result}
+            argument = message["arg"]
+            print(argument)
+            task_result = task(argument)
+            print("results is", task_result)
+            message = {"arg": argument, "ans": task_result}
             packet = dumps(message).encode("utf-8")
             socket.sendall(packet)
+            print("managed to send stuff yo")
 
 
 

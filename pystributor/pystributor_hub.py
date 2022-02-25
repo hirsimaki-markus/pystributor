@@ -3,6 +3,7 @@
 from selectors import DefaultSelector, EVENT_READ
 from atexit import register as atexit_register
 from socket import socket as system_socket
+from sqlite3 import connect
 from threading import Thread
 from inspect import getsource
 from time import sleep
@@ -13,6 +14,8 @@ from json import loads, dumps
 
 HOST = "0.0.0.0" # listen to all incoming traffic. 127.0.0.1 if localhost only
 PORT = 1337
+
+ANSWERSHEET = {}
 
 
 def get_task():
@@ -26,16 +29,39 @@ def get_args():
     return args
 
 
-def recvall_hub(connection):
+def recvall_hub(connection, socket):
     """Receive all data from connection. Detects EOF. Worker and hub in lockstep."""
     buffer_bytes = 8
     accum = b''
+
+    socket.setblocking(True) # haxx?
+    connection.setblocking(True)
+
     while True:
+        #print("APUUAAAAAAAA!!!!!"*100)
         part = connection.recv(8)
+        print(part)
         accum += part
         if len(part) < buffer_bytes:
             break # part was 0 or part was last
+
+    socket.setblocking(False)
+    connection.setblocking(False)
+
     return accum
+
+
+
+    #    try:
+    #        part = connection.recv(8)
+    #    except BlockingIOError as e:
+    #        err = e.args[0]
+    #        if err == EAGAIN or err == EWOULDBLOCK:
+    #            continue
+    #        else:
+    #            # a "real" error occurred
+    #            print(e)
+    #            exit()
 
 
 
@@ -85,7 +111,7 @@ def distribute_task(pool):
 
 
 
-def listener(pool):
+def listener(pool, socket):
     """Handles getting replies from workers"""
     print("Listener daemon online. Waiting for worker replies.")
     connection_selector = DefaultSelector()
@@ -96,7 +122,7 @@ def listener(pool):
         connection_selector.register(connection, EVENT_READ, i)
     def _selector_read_handler(connection, pool, worker_idx):
         """Handles data read by selector from connections"""
-        packet = recvall_hub(connection)
+        packet = recvall_hub(connection, socket)
         if packet:
 
 
@@ -112,9 +138,11 @@ def listener(pool):
                 if message["task"] == "ok":
                     pool[worker_idx][2] = True
             elif "arg" in message:
-                vastaus_tehtävään = message["arg"]
+                question = message["arg"]
+                answer = message["ans"]
                 pool[worker_idx][2] = True
-                print("got answer lol", vastaus_tehtävään)
+                ANSWERSHEET[question] = answer
+
 
 
 
@@ -136,21 +164,37 @@ def super_calculator(pool):
     """The brain which distributes tasks to workers in pool"""
     print("Super calculator daemon online. Distributing tasks to workers.")
     distribute_task(pool)
-    while True:
-        for i, worker in enumerate(pool):
-            connection, address, ready = worker
-            if not ready:
-                continue
 
-            message = {"arg": 100}
-            packet = dumps(message).encode("utf-8")
-            connection.sendall(packet)
+    arguments_for_workers = get_args()
 
-            pool[i][2] = False # worker readiness is false
 
-            print("sent packet to worker", i)
-        sleep(5)
-        print()
+    class NestedLoopException(Exception):
+        """raised to close nested loop"""
+        pass
+
+
+
+    for argument in arguments_for_workers: # for all arguments
+        try:
+            while True: # until argument is sent
+                for i, worker in enumerate(pool): # until worker is found
+                    connection, address, ready = worker
+                    if not ready:
+                        continue
+
+
+                    message = {"arg": argument[0]} # TODO: vararg support for n arguments
+                    packet = dumps(message).encode("utf-8")
+                    connection.sendall(packet)
+
+                    pool[i][2] = False # worker readiness is false
+
+                    print("sent packet to worker", i)
+                    raise NestedLoopException
+        except NestedLoopException:
+            continue
+
+    print("all arguments have been sent. nice.")
 
 
 
@@ -161,8 +205,15 @@ def main():
     pool = discover_workers(socket)
     print("Hub initialized. Starting daemons.")
     Thread(target=super_calculator, args=[pool], daemon=True).start()
-    Thread(target=listener, args=[pool], daemon=True).start()
-    while True: sleep(1)
+    Thread(target=listener, args=[pool, socket], daemon=True).start()
+
+    while True:
+        print()
+        print()
+        print(ANSWERSHEET)
+        print()
+        print()
+        sleep(3)
 
 
 
