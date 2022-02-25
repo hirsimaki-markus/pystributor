@@ -34,19 +34,32 @@ def recvall_hub(connection, socket):
     buffer_bytes = 8
     accum = b''
 
-    socket.setblocking(True) # haxx?
-    connection.setblocking(True)
+    #socket.setblocking(True) # haxx?
+    #connection.setblocking(True)
+
+    # the packets sent must be json so they end in } otherwise error checking wont work
+    # TODO: prefix messages with their lenght. make receive buffer bigger
 
     while True:
         #print("APUUAAAAAAAA!!!!!"*100)
-        part = connection.recv(8)
-        print(part)
+        try:
+            part = connection.recv(8)
+        except BlockingIOError:
+            # blockin happens if nothing to read and last message len == buffer
+            # so it keeps waiting for next packet even tho nothing is coming
+            if accum[-1] == ord("}"): # timeout since last len() for last part equls buff size. waiting for next acket forever
+                break
+            else:
+                print("PERKELE"*100)
+                continue # this continue should never happen. selector told connection is ready to read
+        print(part, end=" ")
         accum += part
+        print(len(part), buffer_bytes)
         if len(part) < buffer_bytes:
             break # part was 0 or part was last
 
-    socket.setblocking(False)
-    connection.setblocking(False)
+    #socket.setblocking(False)
+    #connection.setblocking(False)
 
     return accum
 
@@ -144,10 +157,6 @@ def listener(pool, socket):
                 ANSWERSHEET[question] = answer
 
 
-
-
-
-
         else: # connection is likely closing since no data
             print("Closing worker connection")
             connection_selector.unregister(connection)
@@ -192,6 +201,7 @@ def super_calculator(pool):
                     print("sent packet to worker", i)
                     raise NestedLoopException
         except NestedLoopException:
+            #print("perkele"*10)
             continue
 
     print("all arguments have been sent. nice.")
@@ -310,3 +320,22 @@ if __name__ == "__main__":
 #     #        print("[Worker][Listener]: Decrypted data:", decrypted_data)
 #     #        connection.sendall(fernet.encrypt(decrypted_data))
 #     #        print("[Worker][Listener]: Sent the decryped message back to the hub t. worker")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# TÖYT TÄHÄN ASTI: 18H PER NASSU

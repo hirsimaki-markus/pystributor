@@ -89,11 +89,29 @@ def recvall_worker(socket):
     """Receive all data from socket. Detects EOF. Worker and hub in lockstep."""
     buffer_bytes = 8
     accum = b''
+
+
+    # the packets sent must be json so they end in } otherwise error checking wont work
+    # TODO: prefix messages with their lenght. make recv buffer bigger.
+
     while True:
-        part = socket.recv(8)
+        #print("APUUAAAAAAAA!!!!!"*100)
+        try:
+            part = socket.recv(8)
+        except BlockingIOError:
+            # blockin happens if nothing to read and last message len == buffer
+            # so it keeps waiting for next packet even tho nothing is coming
+            if accum[-1] == ord("}"): # timeout since last len() for last part equls buff size. waiting for next acket forever
+                break
+            else:
+                print("PERKELE"*100)
+                continue # this continue should never happen. selector told connection is ready to read
+        print(part, end=" ")
         accum += part
+        print(len(part), buffer_bytes)
         if len(part) < buffer_bytes:
             break # part was 0 or part was last
+
     return accum
 
 
