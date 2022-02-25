@@ -7,6 +7,7 @@ from threading import Thread
 from inspect import getsource
 from time import sleep
 from os import system
+from json import loads, dumps
 
 
 
@@ -23,6 +24,18 @@ def get_args():
     """returns list of tuples to be distirbuted to workers as arguments"""
     from pystributor_args import args
     return args
+
+
+def recvall_hub(connection):
+    """Receive all data from connection. Detects EOF. Worker and hub in lockstep."""
+    buffer_bytes = 8
+    accum = b''
+    while True:
+        part = connection.recv(8)
+        accum += part
+        if len(part) < buffer_bytes:
+            break # part was 0 or part was last
+    return accum
 
 
 
@@ -51,8 +64,7 @@ def discover_workers(socket):
                 # this allows for ctrl+c to work also on windows
                 continue
             connection.setblocking(False) # must be nonblocking for selector
-            ready = False
-            pool.append((connection, address, ready)) # worker status is False until ready
+            pool.append([connection, address, None]) # worker status is undefine. it has not responded yet
             print("Added worker to pool. Worker address is", address[0] + ":"
                   + str(address[1]) + ".", "Pool size is now", len(pool), )
     except KeyboardInterrupt:
@@ -63,7 +75,13 @@ def discover_workers(socket):
 def distribute_task(pool):
     """Distribute task to workers"""
     for connection, _address, _ready in pool:
-        connection.sendall(get_task())
+        #connection, _address, _ready = worker
+        task_str = get_task()
+        message = {"task": task_str}
+        packet = dumps(message).encode("utf-8")
+        # client and server in lockstep > can send single "message" to stream
+        connection.sendall(packet)
+        #pool[i][2] = True # set worker readiness to True
 
 
 
@@ -73,14 +91,35 @@ def listener(pool):
     connection_selector = DefaultSelector()
     # selector can be queried for file descriptors waiting for I/O operations
     # one selector will handle up to 1024 workers
-    for connection, _address, _ready in pool:
-        connection_selector.register(connection, EVENT_READ)
-    def _selector_read_handler(connection, mask):
+    for i, worker in enumerate (pool):
+        connection, _address, _ready = worker
+        connection_selector.register(connection, EVENT_READ, i)
+    def _selector_read_handler(connection, pool, worker_idx):
         """Handles data read by selector from connections"""
-        data = connection.recv(1024)
-        if data:
+        packet = recvall_hub(connection)
+        if packet:
+
+
+
             # there must be data; select() returns connectons waiting for read
-            print("received stuff. awesome.", data)
+            print()
+            print("received stuff. awesome.", connection.getpeername())
+            print()
+
+            # client and server in lockstep > can pick single "message" from stream
+            message = loads(packet.decode("utf-8"))
+            if "task" in message:
+                if message["task"] == "ok":
+                    pool[worker_idx][2] = True
+            elif "arg" in message:
+                vastaus_tehtävään = message["arg"]
+                pool[worker_idx][2] = True
+                print("got answer lol", vastaus_tehtävään)
+
+
+
+
+
         else: # connection is likely closing since no data
             print("Closing worker connection")
             connection_selector.unregister(connection)
@@ -88,19 +127,28 @@ def listener(pool):
     while True:
         for selectorkey, mask in connection_selector.select(): # this blocks. timeout can be argument. selectorkeys are stuff that has data waiting.
             connection = selectorkey.fileobj
-            _selector_read_handler(connection, mask)
+            worker_idx = selectorkey.data
+            _selector_read_handler(connection, pool, worker_idx)
 
 
 
 def super_calculator(pool):
     """The brain which distributes tasks to workers in pool"""
     print("Super calculator daemon online. Distributing tasks to workers.")
-    #distribute_task(pool)
+    distribute_task(pool)
     while True:
-        for connection, address, _ready in pool:
-            msg = "Test message to " + address[0] + ":" + str(address[1])
-            connection.sendall(msg.encode("utf-8"))
-            print("sent:", msg)
+        for i, worker in enumerate(pool):
+            connection, address, ready = worker
+            if not ready:
+                return
+
+            message = {"arg": 100}
+            packet = dumps(message).encode("utf-8")
+            connection.sendall(packet)
+
+            pool[i][2] = False # worker readiness is false
+
+            print("sent packet to worker", i)
         sleep(5)
         print()
 
