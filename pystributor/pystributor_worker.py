@@ -1,34 +1,49 @@
 #!/usr/bin/python3
 
 
-import time
-import random
-import socket
+from atexit import register as atexit_register
+from socket import socket as system_socket
 from os import system
 
 HOST = '127.0.0.1'
 PORT = 1337
 
-def clear_screen():
-    """Clear screen on unix and windows platforms"""
-    _ = system("cls||clear")
-
-clear_screen()
-print("Worker started. Waiting for messages.")
-
-ClientSocket = socket.socket()
 
 
-ClientSocket.connect((HOST, PORT))
+def initialize_worker_socket():
+    """Returns a configured socket"""
+    socket = system_socket()
+    socket.connect((HOST, PORT))
+    return socket
 
-while True:
-    #response = ClientSocket.recv(1024) # this is blocking operation. socket is set to blocking.
-    #input("press enter to stop waiting and send the response")
-    #ClientSocket.sendall(response)
-    #print("Got message from hub and sent it back:", response.decode('utf-8'))
 
-    asd = input("send some shit: ")
-    ClientSocket.sendall(asd.encode("utf-8"))
+def task():
+    """Placeholder for task until proper task is define by digest_task()"""
+    pass
+
+def digest_task():
+    """Takes the task string as argument. Makes task() function available"""
+
+
+
+def main():
+    print("Starting worker")
+    socket = initialize_worker_socket()
+    atexit_register((lambda socket: socket.close()), socket)
+
+    while True:
+        response = socket.recv(1024) # this is blocking operation. socket is set to blocking.
+        socket.sendall(response)
+        print("echoed a message")
+
+
+
+
+if __name__ == "__main__":
+    _ = system("cls||clear") # clear screen on windows and unix
+    main()
+
+
 
 
 
@@ -48,76 +63,7 @@ while True:
 ##HOST = "192.168.1.46"#Laptop
 ##HOST = "192.168.1.70"#Desktop pc
 #
-#
-#
-#
-#def calculator():
-#    while True:
-#        print("listenre doing nothing")
-#        sleep(10)
-#
-#
-#
-#
-#def listener():
-#    #while True:
-#    #    print("listenre doing nothing")
-#    #    sleep(10)
-#
-#    #with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-#    #    sock.connect((HOST, PORT))
-#    #    while True:
-#            #message = input("[Hub][S Calculator]: Something to send from hub to worker: ")
-#            #message = message.encode('utf-8')
-#            #encypted_message = f.encrypt(message)
-#
-#            #data = sock.recv(4096)
-#            #sock.sendall(data)
-#
-#            #print("[Hub][S Calculator]: Received stuff back from worker", repr(data))
-#            #print("[Hub][S Calculator]: Decrypted version: ", f.decrypt(data))
-#
-#
-#    echoSocket = socket.socket()
-#    echoSocket.bind(("127.0.0.1", 1338))
-#    echoSocket.listen()
-#    while(True):
-#        (clientSocket, clientAddress) = echoSocket.accept()
-#        while(True):
-#            data = clientSocket.recv(1024)
-#            print("At Server: %s"%data)
-#            if(data!=b''):
-#                # Send back what you received
-#                clientSocket.send(data)
-#                break
-#
-#
 #def main():
 #    print("[Worker][Main Process]: Worker starting")
 #
 #    fernet = Fernet(ENCRYPTION_KEY)
-#
-#
-#
-#    print("[Worker][Main Process]: Starting daemons")
-#
-#
-#    t1 = Thread(target=calculator)
-#    t2 = Thread(target=listener)
-#    t1.daemon = True
-#    t2.daemon = True
-#    t1.start()
-#    t2.start()
-#
-#
-#
-#
-#    while True:
-#        sleep(10)
-#
-#    #t1.join()
-#    #t2.join()
-#
-#
-#if __name__ == "__main__":
-#    main()

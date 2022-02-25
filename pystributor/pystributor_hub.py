@@ -27,7 +27,7 @@ def get_args():
 
 
 
-def initialize_socket():
+def initialize_server_socket():
     """Returns a configured socket"""
     socket = system_socket()
     socket.setblocking(False) # blocking would prevent ctrl+c on windows
@@ -51,12 +51,19 @@ def discover_workers(socket):
                 # this allows for ctrl+c to work also on windows
                 continue
             connection.setblocking(False) # must be nonblocking for selector
-            pool.append((connection, address))
+            ready = False
+            pool.append((connection, address, ready)) # worker status is False until ready
             print("Added worker to pool. Worker address is", address[0] + ":"
                   + str(address[1]) + ".", "Pool size is now", len(pool), )
     except KeyboardInterrupt:
         print("\n\nDone building worker pool. Pool size:", len(pool))
     return pool
+
+
+def distribute_task(pool):
+    """Distribute task to workers"""
+    for connection, _address, _ready in pool:
+        connection.sendall(get_task())
 
 
 
@@ -66,7 +73,7 @@ def listener(pool):
     connection_selector = DefaultSelector()
     # selector can be queried for file descriptors waiting for I/O operations
     # one selector will handle up to 1024 workers
-    for connection, address in pool:
+    for connection, _address, _ready in pool:
         connection_selector.register(connection, EVENT_READ)
     def _selector_read_handler(connection, mask):
         """Handles data read by selector from connections"""
@@ -88,8 +95,9 @@ def listener(pool):
 def super_calculator(pool):
     """The brain which distributes tasks to workers in pool"""
     print("Super calculator daemon online. Distributing tasks to workers.")
+    #distribute_task(pool)
     while True:
-        for connection, address in pool:
+        for connection, address, _ready in pool:
             msg = "Test message to " + address[0] + ":" + str(address[1])
             connection.sendall(msg.encode("utf-8"))
             print("sent:", msg)
@@ -100,7 +108,7 @@ def super_calculator(pool):
 
 def main():
     print("Starting hub")
-    socket = initialize_socket()
+    socket = initialize_server_socket()
     atexit_register((lambda socket: socket.close()), socket)
     pool = discover_workers(socket)
     print("Hub initialized. Starting daemons.")

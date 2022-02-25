@@ -4,13 +4,13 @@ worker task is defined with functions bound to task variable. see trivial exampl
 
 
 
-def is_prime(number):
-    if number <= 1:
-        return False
-    for i in range(2, number):
-        if (number % i) == 0:
+def task(number):
+    """Define your task here. is_prime is provided as an example task."""
+    def is_prime(number):
+        if number <= 1:
             return False
-    return True
-
-
-task = is_prime
+        for i in range(2, number):
+            if (number % i) == 0:
+                return False
+        return True
+    return is_prime(number)
