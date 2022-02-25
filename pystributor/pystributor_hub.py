@@ -140,7 +140,7 @@ def super_calculator(pool):
         for i, worker in enumerate(pool):
             connection, address, ready = worker
             if not ready:
-                return
+                continue
 
             message = {"arg": 100}
             packet = dumps(message).encode("utf-8")

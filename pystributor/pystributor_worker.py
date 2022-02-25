@@ -12,6 +12,59 @@ PORT = 1337
 
 
 
+
+
+
+
+# !!!! THIS true_exec BLOCK IS COPIED FROM SEAPIE !!!!!
+# https://github.com/hirsimaki-markus/SEAPIE
+# the author of seapie is Markus Hirsimäki, same author as in the course group
+def true_exec(code, scope):
+    """exec() a codeblock in given scope. Used by seapi repl
+    scope 0 equals executing in context of caller of true_exec().
+    scope 1 equals executing in context of the caller for the caller
+    of true_exec().
+    """
+
+
+    import sys
+    import traceback
+    from ctypes import pythonapi, py_object, c_int
+
+
+    parent = sys._getframe(scope+1)  # +1 escapes true_exec itself
+    parent_globals = parent.f_globals
+    parent_locals = parent.f_locals
+    try:
+        exec(code, parent_globals, parent_locals)
+    except KeyboardInterrupt:  # emulate ctrl+c if code='input()'
+        print("\nKeyboardInterrupt")
+    except Exception:  # catch arbitary exceptions from exec
+        traceback.print_exc()
+    # beware traveller. here lies dark spell of the olden times !
+    # the following call forces update to locals()
+    # adding new variables is allowed but calling them requires
+    # some indirection like using exec() or a placeholder
+    # otherwise you will get nameError when calling the variable
+    # the magic value 1 stands for ability to introduce new
+    # variables. 0 for update-only
+    pythonapi.PyFrame_LocalsToFast(py_object(parent), c_int(1))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def initialize_worker_socket():
     """Returns a configured socket"""
     socket = system_socket()
@@ -27,7 +80,10 @@ def task(arg):
 
 def digest_task(task_str):
     """Takes the task string as argument. Makes task() function available"""
-    exec(task_str)
+    #print("tryina digest")
+    #print(task_str)
+    true_exec(task_str, 2)
+
 
 def recvall_worker(socket):
     """Receive all data from socket. Detects EOF. Worker and hub in lockstep."""
