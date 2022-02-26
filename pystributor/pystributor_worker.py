@@ -3,13 +3,13 @@
 
 from atexit import register as atexit_register
 from hmac import digest
-from socket import socket as system_socket
+from socket import socket as system_socket, SHUT_RDWR
 from os import system
 from json import loads, dumps
 
 HOST = '127.0.0.1'
 PORT = 1337
-
+BUFF_SIZE = 4096 # 4kB
 
 
 
@@ -87,7 +87,6 @@ def digest_task(task_str):
 
 def recvall_worker(socket):
     """Receive all data from socket. Detects EOF. Worker and hub in lockstep."""
-    buffer_bytes = 8
     accum = b''
 
 
@@ -97,57 +96,80 @@ def recvall_worker(socket):
     while True:
         #print("APUUAAAAAAAA!!!!!"*100)
         try:
-            part = socket.recv(8)
+            part = socket.recv(4096)
         except BlockingIOError:
             # blockin happens if nothing to read and last message len == buffer
             # so it keeps waiting for next packet even tho nothing is coming
             if accum[-1] == ord("}"): # timeout since last len() for last part equls buff size. waiting for next acket forever
                 break
             else:
-                print("PERKELE"*100)
-                continue # this continue should never happen. selector told connection is ready to read
-        print(part, end=" ")
+                print("\n\nWarning!!! Reading worker response failed. Received only part of package before timeout")
+                print("Package might have been (partially) lost during transit or connection is bad")
+                continue
+                # this continue should never happen. selector told connection is ready to read
+                # we can reasonably expect that the whole "packet" has already been received
+                # in timely manner before timeout should happen. this means that connection somehow failed
+                # or the data being sent over the stream is extremely large or is being split into small
+                # chunks and being slowed down too much by some network device
+        #print(part, end=" ")
         accum += part
-        print(len(part), buffer_bytes)
-        if len(part) < buffer_bytes:
+        #print(len(part), BUFF_SIZE)
+        if len(part) < BUFF_SIZE:
             break # part was 0 or part was last
 
     return accum
 
 
+def exit_handler(socket):
+    try:
+        socket.shutdown(SHUT_RDWR)
+    except OSError as e:
+        if e.errno == 107:
+            pass # socket already closed
 
 
 def main():
     print("Starting worker")
     socket = initialize_worker_socket()
-    atexit_register((lambda socket: socket.close()), socket)
+    atexit_register(exit_handler, socket)
 
     while True:
         packet = recvall_worker(socket)
+
+        if packet == b'':
+            print("Received end of file. Shutting down.")
+            break
+
         # client and server in lockstep > can pick single "message" from stream
         message = loads(packet.decode("utf-8"))
         if "task" in message: # sending back back ok since task was received
-            print("received task")
             digest_task(message["task"])
             message = {"task": "ok"}
             packet = dumps(message).encode("utf-8")
             socket.sendall(packet)
+            print("Received and digested task. Ack sent.")
         elif "arg" in message: # sending back and answer to an argument
-            print("received arg")
+            #print("received arg")
             argument = message["arg"]
-            print(argument)
+            #print(argument)
             task_result = task(argument)
-            print("results is", task_result)
             message = {"arg": argument, "ans": task_result}
             packet = dumps(message).encode("utf-8")
             socket.sendall(packet)
-            print("managed to send stuff yo")
+            #print("Processed argument:", argument, task_result, "Ack sent.")
+            #print("managed to send stuff yo")
 
 
 
 if __name__ == "__main__":
     _ = system("cls||clear") # clear screen on windows and unix
+
+    from time import time
+    alku = time()
+
     main()
+
+    print("kesto:", time()-alku)
 
 
 

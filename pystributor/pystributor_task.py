@@ -16,3 +16,22 @@ def task(number):
                 return False
         return True
     return is_prime(number)
+
+
+
+if __name__ == "__main__":
+    from os import system
+    _ = system("cls||clear") # clear screen on windows and unix
+
+    print("starting test...")
+
+    from pystributor_args import args
+
+    from time import time
+    alku = time()
+
+    for i in args:
+        print(i)
+        task(i[0])
+
+    print("kesto:", time()-alku)

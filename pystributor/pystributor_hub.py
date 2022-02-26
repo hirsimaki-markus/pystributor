@@ -1,9 +1,16 @@
 #!/usr/bin/python3
 
+
+"""Important: worker pool data type is currently implemented as 2D list
+[[connection, address, is_ready], [...], [...]]
+The data should be accessed with list notation by enumerating worker pool if
+needed. both lists are mutable so the nonglobal pool can be passed by reference
+"""
+
+
 from selectors import DefaultSelector, EVENT_READ
 from atexit import register as atexit_register
-from socket import socket as system_socket
-from sqlite3 import connect
+from socket import socket as system_socket, SHUT_RDWR
 from threading import Thread
 from inspect import getsource
 from time import sleep
@@ -14,6 +21,7 @@ from json import loads, dumps
 
 HOST = "0.0.0.0" # listen to all incoming traffic. 127.0.0.1 if localhost only
 PORT = 1337
+BUFF_SIZE = 4096 # 4kB
 
 ANSWERSHEET = {}
 
@@ -29,34 +37,36 @@ def get_args():
     return args
 
 
-def recvall_hub(connection, socket):
+def recvall_hub(connection):
     """Receive all data from connection. Detects EOF. Worker and hub in lockstep."""
-    buffer_bytes = 8
-    accum = b''
 
-    #socket.setblocking(True) # haxx?
-    #connection.setblocking(True)
+    accum = b''
 
     # the packets sent must be json so they end in } otherwise error checking wont work
     # TODO: prefix messages with their lenght. make receive buffer bigger
+    # or maybe lazy solution is to try and validate the json object that has been fetched. ez
 
     while True:
-        #print("APUUAAAAAAAA!!!!!"*100)
         try:
-            part = connection.recv(8)
+            part = connection.recv(BUFF_SIZE)
         except BlockingIOError:
             # blockin happens if nothing to read and last message len == buffer
             # so it keeps waiting for next packet even tho nothing is coming
             if accum[-1] == ord("}"): # timeout since last len() for last part equls buff size. waiting for next acket forever
                 break
             else:
-                print("PERKELE"*100)
-                continue # this continue should never happen. selector told connection is ready to read
-        print(part, end=" ")
+                print("\n\nWarning!!! Reading worker response failed. Received only part of package before timeout")
+                print("Package might have been (partially) lost during transit or connection is bad")
+                continue
+                # this continue should never happen. selector told connection is ready to read
+                # we can reasonably expect that the whole "packet" has already been received
+                # in timely manner before timeout should happen. this means that connection somehow failed
+                # or the data being sent over the stream is extremely large or is being split into small
+                # chunks and being slowed down too much by some network device
         accum += part
-        print(len(part), buffer_bytes)
-        if len(part) < buffer_bytes:
-            break # part was 0 or part was last
+        #print(len(part), buffer_bytes)
+        if len(part) < BUFF_SIZE:
+            break # received part was smaller than buffer size > message must be over
 
     #socket.setblocking(False)
     #connection.setblocking(False)
@@ -124,7 +134,7 @@ def distribute_task(pool):
 
 
 
-def listener(pool, socket):
+def listener(pool):
     """Handles getting replies from workers"""
     print("Listener daemon online. Waiting for worker replies.")
     connection_selector = DefaultSelector()
@@ -135,37 +145,48 @@ def listener(pool, socket):
         connection_selector.register(connection, EVENT_READ, i)
     def _selector_read_handler(connection, pool, worker_idx):
         """Handles data read by selector from connections"""
-        packet = recvall_hub(connection, socket)
+        packet = recvall_hub(connection)
         if packet:
 
 
 
             # there must be data; select() returns connectons waiting for read
-            print()
-            print("received stuff. awesome.", connection.getpeername())
-            print()
+            #print()
+            #print("received stuff. awesome.", connection.getpeername())
+            #print()
 
             # client and server in lockstep > can pick single "message" from stream
             message = loads(packet.decode("utf-8"))
             if "task" in message:
+                # task was received succesfully
                 if message["task"] == "ok":
                     pool[worker_idx][2] = True
             elif "arg" in message:
+                # received answer to a calculation
                 question = message["arg"]
                 answer = message["ans"]
                 pool[worker_idx][2] = True
                 ANSWERSHEET[question] = answer
+                #print(len(ANSWERSHEET))
+                #print(len(get_args()))
 
 
         else: # connection is likely closing since no data
-            print("Closing worker connection")
+            print("Closing worker connection. Worker dropped from pool.")
             connection_selector.unregister(connection)
             connection.close()
+
+    arg_count = len(get_args())
+    kill_fuse = False
     while True:
         for selectorkey, mask in connection_selector.select(): # this blocks. timeout can be argument. selectorkeys are stuff that has data waiting.
             connection = selectorkey.fileobj
             worker_idx = selectorkey.data
             _selector_read_handler(connection, pool, worker_idx)
+        if arg_count == len(ANSWERSHEET):
+            break
+    print("Listener daemon done. All answers received.")
+
 
 
 
@@ -187,7 +208,7 @@ def super_calculator(pool):
         try:
             while True: # until argument is sent
                 for i, worker in enumerate(pool): # until worker is found
-                    connection, address, ready = worker
+                    connection, _address, ready = worker
                     if not ready:
                         continue
 
@@ -198,38 +219,70 @@ def super_calculator(pool):
 
                     pool[i][2] = False # worker readiness is false
 
-                    print("sent packet to worker", i)
+                    # print("sent packet to worker", i)
                     raise NestedLoopException
         except NestedLoopException:
             #print("perkele"*10)
             continue
 
-    print("all arguments have been sent. nice.")
+    print("Calculator daemon done. All arguments distributed.")
 
+
+def kill_workers(pool):
+    """Send message to each worker to exit"""
+    for i, worker in enumerate(pool):
+        connection, _address, _ready = worker
+        connection.close()
+        pool[i][2] = False # worker readiness is false
+
+
+def exit_handler(socket):
+    try:
+        socket.shutdown(SHUT_RDWR)
+    except OSError as e:
+        if e.errno == 107:
+            pass # socket already closed
 
 
 def main():
     print("Starting hub")
     socket = initialize_server_socket()
-    atexit_register((lambda socket: socket.close()), socket)
+    atexit_register(exit_handler, socket)
     pool = discover_workers(socket)
-    print("Hub initialized. Starting daemons.")
-    Thread(target=super_calculator, args=[pool], daemon=True).start()
-    Thread(target=listener, args=[pool, socket], daemon=True).start()
+    print("Hub initialized. Starting listener and calculator daemons. Waiting for daemons to finish.")
+    (t1 := Thread(target=super_calculator, args=[pool], daemon=True)).start()
+    (t2 := Thread(target=listener, args=[pool], daemon=True)).start()
 
-    while True:
-        print()
-        print()
-        print(ANSWERSHEET)
-        print()
-        print()
-        sleep(3)
+    while (t1.is_alive() or t2.is_alive()):
+        # wait until all arguments have bee sent to workers and wait until
+        # all arguments have been processed
+        sleep(1)
+
+    print("Daemons done. Killing workers.")
+    kill_workers(pool)
+
+    print("==========[ Results for task per argument]==========")
+    #for key in ANSWERSHEET:
+    #    print(key, ":", ANSWERSHEET[key])
 
 
 
 if __name__ == "__main__":
     _ = system("cls||clear") # clear screen on windows and unix
+
+
+
+    print("starting test...")
+
+    from pystributor_args import args
+
+    from time import time
+    alku = time()
+
     main()
+    # for i in args: task(i[0])
+
+    print("kesto:", time()-alku)
 
 
 

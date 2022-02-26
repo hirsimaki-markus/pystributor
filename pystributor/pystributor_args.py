@@ -10,7 +10,7 @@ def get_numbers():
     assigning a list with hard coded items to args would also work.
     """
     accum = []
-    for i in range(1, 21):
+    for i in range(10**8, (10**8)+1000):
         accum.append((i,))
     return accum
 
