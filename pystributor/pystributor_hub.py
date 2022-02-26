@@ -175,6 +175,10 @@ def listener(pool):
             print("Closing worker connection. Worker dropped from pool.")
             connection_selector.unregister(connection)
             connection.close()
+            pool[worker_idx][2] = False
+            print("Worker state marked as False")
+            print(pool[worker_idx])
+            #TODO:hub and worker still breaks if worker is dropped at any point...
 
     arg_count = len(get_args())
     kill_fuse = False
