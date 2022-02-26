@@ -5,7 +5,7 @@ This file is provided as a demonstration tool for using pystributor
 """
 
 from os import system
-from pystributor.pystributor import hub
+import pystributor_lib.pystributor
 
 
 
@@ -46,7 +46,7 @@ def main():
     ##### TO PYSTRIBUTOR ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-    hub(task,
+    pystributor_lib.pystributor.hub(task,
         args,
         host="0.0.0.0",
         port=1337,
