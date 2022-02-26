@@ -17,13 +17,13 @@ from time import sleep
 from os import system
 from json import loads, dumps
 from cryptography.fernet import Fernet
+from textwrap import dedent
 
 
-
-HOST = "0.0.0.0" # listen to all incoming traffic. 127.0.0.1 if localhost only
-PORT = 1337
-BUFF_SIZE = 4096 # 4kB
-FERNETKEY = "xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="
+#HOST = "0.0.0.0" # listen to all incoming traffic. 127.0.0.1 if localhost only
+#PORT = 1337
+#BUFF_SIZE = 4096 # 4kB
+#FERNETKEY = "xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="
 ANSWERSHEET = {}
 
 
@@ -267,6 +267,37 @@ def exit_handler(socket):
 
 def main():
     print("You should not be running this file. See provided demo for usage")
+
+
+
+def hub(task,
+        args,
+        host="0.0.0.0",
+        port=1337,
+        buff_sisze=4096,
+        fernetkey="xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="
+    ):
+
+    print("Starting hub")
+    fernet = Fernet(fernetkey)
+    socket = initialize_server_socket()
+    atexit_register(exit_handler, socket)
+    pool = discover_workers(socket)
+
+
+    print("Hub initialized. Starting listener and calculator daemons. Waiting for daemons to finish.")
+    (t1 := Thread(target=super_calculator, args=[pool, fernet], daemon=True)).start()
+    (t2 := Thread(target=listener, args=[pool, fernet], daemon=True)).start()
+
+    while (t1.is_alive() or t2.is_alive()):
+        # wait until all arguments have bee sent to workers and wait until
+        # all arguments have been processed
+        sleep(1)
+
+    print("Daemons done. Killing workers. Returning answersheet")
+    kill_workers(pool)
+
+    return ANSWERSHEET
 
 
 if __name__ == "__main__":
