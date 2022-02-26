@@ -142,8 +142,9 @@ def listener(pool, fernet):
         connection_selector.register(connection, EVENT_READ, i)
     def _selector_read_handler(connection, pool, worker_idx):
         """Handles data read by selector from connections"""
-        packet = fernet.decrypt(recvall_hub(connection))
-        if packet:
+        encrypted_packet = recvall_hub(connection)
+        if encrypted_packet: # if not empty
+            packet = fernet.decrypt(encrypted_packet)
 
 
 
@@ -172,13 +173,12 @@ def listener(pool, fernet):
             print("Closing worker connection. Worker dropped from pool.")
             connection_selector.unregister(connection)
             connection.close()
-            pool[worker_idx][2] = False
-            print("Worker state marked as False")
-            print(pool[worker_idx])
+            #pool[worker_idx][2] = False
+            #print("Worker state marked as False")
+            #print(pool[worker_idx])
             #TODO:hub and worker still breaks if worker is dropped at any point...
 
     arg_count = len(get_args())
-    kill_fuse = False
     while True:
         for selectorkey, mask in connection_selector.select(): # this blocks. timeout can be argument. selectorkeys are stuff that has data waiting.
             connection = selectorkey.fileobj
@@ -266,8 +266,8 @@ def main():
     kill_workers(pool)
 
     print("==========[ Results for task per argument]==========")
-    for key in ANSWERSHEET:
-        print(key, ":", ANSWERSHEET[key])
+    #for key in ANSWERSHEET:
+    #    print(key, ":", ANSWERSHEET[key])
 
 
     ### timing test ###
