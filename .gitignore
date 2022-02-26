@@ -2,3 +2,4 @@
 pystributor/__pycache__/pystributor_task.cpython-38.pyc
 pystributor/__pycache__/pystributor_args.cpython-38.pyc
 pystributor/__pycache__/
+*.pyc
