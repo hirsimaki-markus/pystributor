@@ -270,7 +270,7 @@ def main():
 
 
 
-def hub(task,
+def _hub(task,
         args,
         host="0.0.0.0",
         port=1337,
