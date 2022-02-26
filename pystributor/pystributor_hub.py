@@ -16,13 +16,14 @@ from inspect import getsource
 from time import sleep
 from os import system
 from json import loads, dumps
+from cryptography.fernet import Fernet
 
 
 
 HOST = "0.0.0.0" # listen to all incoming traffic. 127.0.0.1 if localhost only
 PORT = 1337
 BUFF_SIZE = 4096 # 4kB
-
+FERNETKEY = "xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="
 ANSWERSHEET = {}
 
 
@@ -52,17 +53,13 @@ def recvall_hub(connection):
         except BlockingIOError:
             # blockin happens if nothing to read and last message len == buffer
             # so it keeps waiting for next packet even tho nothing is coming
-            if accum[-1] == ord("}"): # timeout since last len() for last part equls buff size. waiting for next acket forever
-                break
-            else:
-                print("\n\nWarning!!! Reading worker response failed. Received only part of package before timeout")
-                print("Package might have been (partially) lost during transit or connection is bad")
-                continue
-                # this continue should never happen. selector told connection is ready to read
-                # we can reasonably expect that the whole "packet" has already been received
-                # in timely manner before timeout should happen. this means that connection somehow failed
-                # or the data being sent over the stream is extremely large or is being split into small
-                # chunks and being slowed down too much by some network device
+            # timeout since last len() for last part equls buff size. waiting for next acket forever
+            break
+            # this continue should never happen. selector told connection is ready to read
+            # we can reasonably expect that the whole "packet" has already been received
+            # in timely manner before timeout should happen. this means that connection somehow failed
+            # or the data being sent over the stream is extremely large or is being split into small
+            # chunks and being slowed down too much by some network device
         accum += part
         #print(len(part), buffer_bytes)
         if len(part) < BUFF_SIZE:
@@ -121,20 +118,20 @@ def discover_workers(socket):
     return pool
 
 
-def distribute_task(pool):
+def distribute_task(pool, fernet):
     """Distribute task to workers"""
     for connection, _address, _ready in pool:
         #connection, _address, _ready = worker
         task_str = get_task()
         message = {"task": task_str}
-        packet = dumps(message).encode("utf-8")
+        packet = fernet.encrypt(dumps(message).encode("utf-8"))
         # client and server in lockstep > can send single "message" to stream
         connection.sendall(packet)
         #pool[i][2] = True # set worker readiness to True
 
 
 
-def listener(pool):
+def listener(pool, fernet):
     """Handles getting replies from workers"""
     print("Listener daemon online. Waiting for worker replies.")
     connection_selector = DefaultSelector()
@@ -145,7 +142,7 @@ def listener(pool):
         connection_selector.register(connection, EVENT_READ, i)
     def _selector_read_handler(connection, pool, worker_idx):
         """Handles data read by selector from connections"""
-        packet = recvall_hub(connection)
+        packet = fernet.decrypt(recvall_hub(connection))
         if packet:
 
 
@@ -190,23 +187,14 @@ def listener(pool):
 
 
 
-def super_calculator(pool):
+def super_calculator(pool, fernet):
     """The brain which distributes tasks to workers in pool"""
     print("Super calculator daemon online. Distributing tasks to workers.")
-    distribute_task(pool)
-
-
-
+    distribute_task(pool, fernet)
     class NestedLoopException(Exception):
         """raised to close nested loop"""
         pass
-
     arguments_for_workers = get_args()
-
-
-
-
-
     for argument in arguments_for_workers: # for all arguments
         try:
             while True: # until argument is sent
@@ -217,7 +205,7 @@ def super_calculator(pool):
 
 
                     message = {"arg": argument[0]} # TODO: vararg support for n arguments
-                    packet = dumps(message).encode("utf-8")
+                    packet = fernet.encrypt(dumps(message).encode("utf-8"))
                     connection.sendall(packet)
 
                     pool[i][2] = False # worker readiness is false
@@ -249,6 +237,7 @@ def exit_handler(socket):
 
 def main():
     print("Starting hub")
+    fernet = Fernet(FERNETKEY)
     socket = initialize_server_socket()
     atexit_register(exit_handler, socket)
     pool = discover_workers(socket)
@@ -261,8 +250,8 @@ def main():
     ###################
 
     print("Hub initialized. Starting listener and calculator daemons. Waiting for daemons to finish.")
-    (t1 := Thread(target=super_calculator, args=[pool], daemon=True)).start()
-    (t2 := Thread(target=listener, args=[pool], daemon=True)).start()
+    (t1 := Thread(target=super_calculator, args=[pool, fernet], daemon=True)).start()
+    (t2 := Thread(target=listener, args=[pool, fernet], daemon=True)).start()
 
     while (t1.is_alive() or t2.is_alive()):
         # wait until all arguments have bee sent to workers and wait until
@@ -273,8 +262,8 @@ def main():
     kill_workers(pool)
 
     print("==========[ Results for task per argument]==========")
-    #for key in ANSWERSHEET:
-    #    print(key, ":", ANSWERSHEET[key])
+    for key in ANSWERSHEET:
+        print(key, ":", ANSWERSHEET[key])
 
 
     ### timing test ###
