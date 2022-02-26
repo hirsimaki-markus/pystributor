@@ -195,12 +195,15 @@ def super_calculator(pool):
     print("Super calculator daemon online. Distributing tasks to workers.")
     distribute_task(pool)
 
-    arguments_for_workers = get_args()
 
 
     class NestedLoopException(Exception):
         """raised to close nested loop"""
         pass
+
+    arguments_for_workers = get_args()
+
+
 
 
 
@@ -249,6 +252,14 @@ def main():
     socket = initialize_server_socket()
     atexit_register(exit_handler, socket)
     pool = discover_workers(socket)
+
+
+    ### timing test ###
+    from time import time
+    alku = time()
+    _=input("Enter to start timing")
+    ###################
+
     print("Hub initialized. Starting listener and calculator daemons. Waiting for daemons to finish.")
     (t1 := Thread(target=super_calculator, args=[pool], daemon=True)).start()
     (t2 := Thread(target=listener, args=[pool], daemon=True)).start()
@@ -266,23 +277,18 @@ def main():
     #    print(key, ":", ANSWERSHEET[key])
 
 
+    ### timing test ###
+    print("kesto:", time()-alku)
+    ###################
+
+
+
+
 
 if __name__ == "__main__":
     _ = system("cls||clear") # clear screen on windows and unix
-
-
-
-    print("starting test...")
-
-    from pystributor_args import args
-
-    from time import time
-    alku = time()
-
     main()
-    # for i in args: task(i[0])
 
-    print("kesto:", time()-alku)
 
 
 
@@ -392,3 +398,4 @@ if __name__ == "__main__":
 
 
 # TÖYT TÄHÄN ASTI: 18H PER NASSU
+# ja makelle ehkä 3h lisää
