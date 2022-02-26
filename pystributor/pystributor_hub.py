@@ -239,43 +239,34 @@ def exit_handler(socket):
             pass # socket already closed
 
 
+#def main():
+#    print("Starting hub")
+#    fernet = Fernet(FERNETKEY)
+#    socket = initialize_server_socket()
+#    atexit_register(exit_handler, socket)
+#    pool = discover_workers(socket)
+#
+#
+#    print("Hub initialized. Starting listener and calculator daemons. Waiting for daemons to finish.")
+#    (t1 := Thread(target=super_calculator, args=[pool, fernet], daemon=True)).start()
+#    (t2 := Thread(target=listener, args=[pool, fernet], daemon=True)).start()#
+#
+#    while (t1.is_alive() or t2.is_alive()):
+#        # wait until all arguments have bee sent to workers and wait until
+#        # all arguments have been processed
+#        sleep(1)
+#
+#    print("Daemons done. Killing workers.")
+#    kill_workers(pool)
+#
+#    print("==========[ Results for task per argument]==========")
+#    #for key in ANSWERSHEET:
+#    #    print(key, ":", ANSWERSHEET[key])
+
+
+
 def main():
-    print("Starting hub")
-    fernet = Fernet(FERNETKEY)
-    socket = initialize_server_socket()
-    atexit_register(exit_handler, socket)
-    pool = discover_workers(socket)
-
-
-    ### timing test ###
-    from time import time
-    alku = time()
-    _=input("Enter to start timing")
-    ###################
-
-    print("Hub initialized. Starting listener and calculator daemons. Waiting for daemons to finish.")
-    (t1 := Thread(target=super_calculator, args=[pool, fernet], daemon=True)).start()
-    (t2 := Thread(target=listener, args=[pool, fernet], daemon=True)).start()
-
-    while (t1.is_alive() or t2.is_alive()):
-        # wait until all arguments have bee sent to workers and wait until
-        # all arguments have been processed
-        sleep(1)
-
-    print("Daemons done. Killing workers.")
-    kill_workers(pool)
-
-    print("==========[ Results for task per argument]==========")
-    #for key in ANSWERSHEET:
-    #    print(key, ":", ANSWERSHEET[key])
-
-
-    ### timing test ###
-    print("kesto:", time()-alku)
-    ###################
-
-
-
+    print("You should not be running this file. See provided demo for usage")
 
 
 if __name__ == "__main__":
@@ -286,109 +277,3 @@ if __name__ == "__main__":
 
 
 
-
-
-
-
-
-
-
-
-
-################[ not trash code]################################
-
-# fernet = Fernet(ENCRYPTION_KEY)
-# ENCRYPTION_KEY = "xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="
-
-#from pystributor_args import args
-#from cryptography.fernet import Fernet
-#from pystributor_task import task
-#from inspect import getsource
-#from threading import Thread
-#from time import sleep
-#import socket
-
-
-
-#############################[ trash code ]################################
-
-
-
-#def get_pool():
-#    """returns workers in some form. wololoo."""
-#    pass
-
-
-# def accept_wrapper(sock):
-#     conn, addr = sock.accept()  # Should be ready to read
-#     print('accepted connection from', addr)
-#     conn.setblocking(False)
-#     data = types.SimpleNamespace(addr=addr, inb=b'', outb=b'')
-#     events = selectors.EVENT_READ | selectors.EVENT_WRITE
-#     sel.register(conn, events, data=data)
-#
-# def service_connection(key, mask):
-#     #print("did some servicing yo")
-#     sock = key.fileobj
-#     data = key.data
-#     if mask & selectors.EVENT_READ:
-#         recv_data = sock.recv(1024)  # Should be ready to read
-#         if recv_data:
-#             data.outb += recv_data
-#         else:
-#             print('closing connection to', data.addr)
-#             sel.unregister(sock)
-#             sock.close()
-#     if mask & selectors.EVENT_WRITE:
-#         if data.outb:
-#             print('echoing', repr(data.outb), 'to', data.addr)
-#             sent = sock.send(data.outb)  # Should be ready to write
-#             data.outb = data.outb[sent:]
-#
-# def super_calculator():
-#     #input("hold it bruda")
-#     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-#         s.connect(("127.0.0.1", 1338))
-#         while True:
-#             message = input("send something from worker: ")
-#             message = message.encode('utf-8')
-#             s.sendall(message)
-#             #data = s.recv(1024)
-#             #print(data)
-#
-#     #while True:
-#     #    print("supercalc idling")
-#     #    sleep(10)
-#
-#
-#     #with connection:
-#     #    while True:
-#     #        data = connection.recv(4096)
-#     #        if not data:
-#     #            break
-#     #        print("[Worker][Listener]: Received following data:", data)
-#     #        print("[Worker][Listener]: Trying to decrypt...")
-#     #        decrypted_data = fernet.decrypt(data)
-#     #        print("[Worker][Listener]: Decrypted data:", decrypted_data)
-#     #        connection.sendall(fernet.encrypt(decrypted_data))
-#     #        print("[Worker][Listener]: Sent the decryped message back to the hub t. worker")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# TÖYT TÄHÄN ASTI: 18H PER NASSU
-# ja makelle ehkä 3h lisää
