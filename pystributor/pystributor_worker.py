@@ -7,11 +7,13 @@ from socket import socket as system_socket, SHUT_RDWR
 from os import system
 from json import loads, dumps
 from time import sleep
+from cryptography.fernet import Fernet
 
 HOST = '127.0.0.1'
 #HOST = '192.168.1.70'
 PORT = 1337
 BUFF_SIZE = 4096 # 4kB
+FERNETKEY = "xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="
 
 
 
@@ -98,18 +100,12 @@ def recvall_worker(socket):
         except BlockingIOError:
             # blockin happens if nothing to read and last message len == buffer
             # so it keeps waiting for next packet even tho nothing is coming
-            if accum[-1] == ord("}"): # timeout since last len() for last part equls buff size. waiting for next acket forever
-                break
-            else:
-                print("\n\nWarning!!! Reading worker response failed. Received only part of package before timeout")
-                print("Package might have been (partially) lost during transit or connection is bad")
-                continue
-                # this continue should never happen. selector told connection is ready to read
-                # we can reasonably expect that the whole "packet" has already been received
-                # in timely manner before timeout should happen. this means that connection somehow failed
-                # or the data being sent over the stream is extremely large or is being split into small
-                # chunks and being slowed down too much by some network device
-        #print(part, end=" ")
+            break
+            # this continue should never happen. selector told connection is ready to read
+            # we can reasonably expect that the whole "packet" has already been received
+            # in timely manner before timeout should happen. this means that connection somehow failed
+            # or the data being sent over the stream is extremely large or is being split into small
+            # chunks and being slowed down too much by some network device
         accum += part
         #print(len(part), BUFF_SIZE)
         if len(part) < BUFF_SIZE:
@@ -128,22 +124,25 @@ def exit_handler(socket):
 
 def main():
     print("Starting worker. Trying to connect to the hub on adress:", HOST, ", port",  PORT)
+    fernet = Fernet(FERNETKEY)
     socket = initialize_worker_socket()
     atexit_register(exit_handler, socket)
 
     while True:
-        packet = recvall_worker(socket)
+        packet_encrypted = recvall_worker(socket)
 
-        if packet == b'':
+        if packet_encrypted == b'':
             print("Received end of file. Shutting down.")
             break
+
+        packet = fernet.decrypt(packet_encrypted)
 
         # client and server in lockstep > can pick single "message" from stream
         message = loads(packet.decode("utf-8"))
         if "task" in message: # sending back back ok since task was received
             digest_task(message["task"])
             message = {"task": "ok"}
-            packet = dumps(message).encode("utf-8")
+            packet = fernet.encrypt(dumps(message).encode("utf-8"))
             socket.sendall(packet)
             print("Received and digested task. Ack sent.")
         elif "arg" in message: # sending back and answer to an argument
@@ -152,7 +151,7 @@ def main():
             #print(argument)
             task_result = task(argument)
             message = {"arg": argument, "ans": task_result}
-            packet = dumps(message).encode("utf-8")
+            packet = fernet.encrypt(dumps(message).encode("utf-8"))
             socket.sendall(packet)
             #print("Processed argument:", argument, task_result, "Ack sent.")
             #print("managed to send stuff yo")
