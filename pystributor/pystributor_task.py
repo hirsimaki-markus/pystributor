@@ -31,7 +31,7 @@ if __name__ == "__main__":
     alku = time()
 
     for i in args:
-        print(i)
+        #print(i)
         task(i[0])
 
     print("kesto:", time()-alku)

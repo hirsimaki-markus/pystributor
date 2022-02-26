@@ -6,8 +6,10 @@ from hmac import digest
 from socket import socket as system_socket, SHUT_RDWR
 from os import system
 from json import loads, dumps
+from time import sleep
 
 HOST = '127.0.0.1'
+#HOST = '192.168.1.70'
 PORT = 1337
 BUFF_SIZE = 4096 # 4kB
 
@@ -52,23 +54,19 @@ def true_exec(code, scope):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 def initialize_worker_socket():
     """Returns a configured socket"""
     socket = system_socket()
-    socket.connect((HOST, PORT))
+    #socket.connect((HOST, PORT))
+    while True:
+        try:
+            socket.connect((HOST, PORT))
+        except Exception as e:
+            print("Cannot connect to hub yet, trying again in 10 seconds.")
+            #print(e)
+            sleep(10)
+        else:
+            break
     return socket
 
 
@@ -129,7 +127,7 @@ def exit_handler(socket):
 
 
 def main():
-    print("Starting worker")
+    print("Starting worker. Trying to connect to the hub on adress:", HOST, ", port",  PORT)
     socket = initialize_worker_socket()
     atexit_register(exit_handler, socket)
 
