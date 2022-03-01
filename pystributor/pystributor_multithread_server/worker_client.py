@@ -97,7 +97,13 @@ def parse_messages(encrypted_data, connection):
         print(TASK)
         send_json_message({"task": "ok"}, connection)
         print("Received and digested task. Ack sent.")
+
+    elif "id" in message:
+        global worker_name 
+        worker_name = message["id"]
+        print(f"I got an id: Worker {worker_name}")
     elif "kill" in message:
+        global server_requesting_shutdown
         server_requesting_shutdown = True
         print("Server requested killing this worker :(")
 
@@ -113,7 +119,7 @@ def worker_send_thread(worker):
         if kill_threads == True:
             worker.close()
             break
-        message = f"Hello it's me, {worker_name} again..."
+        message = f"Hello it's me, Worker {worker_name} again..."
         try:
             worker.send(message.encode("utf_8"))
         except ConnectionResetError:
@@ -138,14 +144,14 @@ def initialize_connections():
             print("Cannot connect to hub, trying again in 10 seconds.")
             #print(e)
             sleep(10)
-    while True:
+    """while True:
         message = worker.recv(1024).decode("utf_8")
         if "Your name is:" in message:
             global worker_name
             worker_name = message[14:]
             print(f"I got a name: {worker_name}")
             worker.send((f"{worker_name} is ready to work!").encode("utf_8"))
-            break
+            break"""
     
     kill_threads = False
     receive_thread = threading.Thread(target=worker_receive_thread, args=(worker,))

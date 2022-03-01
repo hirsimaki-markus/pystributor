@@ -25,6 +25,10 @@ worker_pool = []
 
 def manage_worker_thread(list_id):
     connection = list_id.connection
+    
+    task_str = get_task()
+    message = {"task": task_str}
+    send_json(message, list_id.connection)
     while True:
         data = connection.recv(1024)
         if not data:
@@ -65,16 +69,13 @@ def handle_new_workers():
         id += 1
         worker_id = id
         print("Worker got id", worker_id)
-        msg = "Your name is: " + str(worker_id)
-        connection.send(msg.encode("utf_8"))
-        msg = connection.recv(1024).decode("utf_8")
+        send_json({"id": worker_id}, connection)
         timestamp = time()
-        print(msg)
-        worker_pool.append(Worker(worker_id, connection, address, True, None, timestamp, timestamp))
+        worker_pool.append(Worker(worker_id, connection, address, False, None, timestamp, timestamp))
         list_id = worker_pool[-1]
-        print(f"Worker {worker_id} added to the pool.")
         worker_thread = threading.Thread(target=manage_worker_thread, args=(list_id,))
         worker_thread.start()
+        print(f"Worker {worker_id} added to the pool.")
         #sleep(1)
 
 def ping_workers():
@@ -84,8 +85,9 @@ def ping_workers():
         print(len(worker_pool))
         if len(worker_pool) > 0:
             for worker in worker_pool:
-                send_json({"alive": "?"}, worker.connection)
-                print(f"Worker status: id{worker.id_number}, is free = {worker.free}, arguments = {worker.arguments}, heartbeat = {worker.heartbeat}, last answer = {worker.last_answer}.")
+                if time() - worker.last_answer > 120:
+                    send_json({"alive": "?"}, worker.connection)
+                    print(f"Worker status: id{worker.id_number}, is free = {worker.free}, arguments = {worker.arguments}, heartbeat = {worker.heartbeat}, last answer = {worker.last_answer}.")
 
 def send_json(json_str, connection):
     packet = FERNET.encrypt(dumps(json_str).encode("utf-8"))
@@ -112,7 +114,7 @@ def get_args():
 
 def super_calculator(arguments_for_workers):
     """The brain which distributes tasks to workers in pool"""
-    distribute_task()
+    #distribute_task()
 
     while len(arguments_for_workers) > 0:
         for worker in worker_pool: # until worker is found
@@ -147,7 +149,7 @@ def main(min_pool_size):
         print(arg_num)
         print(len(ANSWERSHEET))
     print("Everything calculated. Total time:", str(time()-start_time))
-    #print(ANSWERSHEET)
+    print(ANSWERSHEET)
 
 if __name__ == "__main__":
     _ = system("cls||clear") # clear screen on windows and unix
