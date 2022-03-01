@@ -17,3 +17,6 @@ def get_numbers():
 
 args = get_numbers() # get_numbes() could also be hard coded list here
 
+if __name__ == "__main__":
+    numbers = get_numbers()
+    print(numbers)
