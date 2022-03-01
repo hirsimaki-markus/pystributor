@@ -2,6 +2,8 @@
 
 
 
-from pystributor_lib.pystributor_hub import _hub
+from pystributor_lib.pystributor_hub import Hub as _Hub
+from pystributor_lib.pystributor_worker import Worker as _Worker
 
-hub = _hub
+Hub = _Hub
+Worker = _Worker
