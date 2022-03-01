@@ -65,6 +65,6 @@ if __name__ == "__main__":
 
 
 
-# TÖYT TÄHÄN ASTI: 22H PER NASSU
+# TÖYT TÄHÄN ASTI: 24H PER NASSU
 # ja makelle ehkä 10h lisää
 # ja patrikille 4h
