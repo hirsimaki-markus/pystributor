@@ -5,7 +5,7 @@ This file is provided as a demonstration tool for using pystributor
 """
 
 from os import system
-from pystributor_lib.pystributor import Hub
+from pystributor_lib.pystributor import Hub, Worker
 
 
 
@@ -27,7 +27,7 @@ def main():
     print("")
 
     while True:
-        inp = input("Enter H to start hub from this demo. Enter W to start worker.")
+        inp = input("Enter H to start hub from this demo. Enter W to start worker: ")
         if inp == "H":
             ##### THIS STUFF HERE IS WHAT YOUR MAGICAL PROJECT SHOULD GIVE AS ARGUMENT
             ##### TO PYSTRIBUTOR VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
@@ -51,8 +51,11 @@ def main():
             hub = Hub(task, args)
             hub.start()
             print(hub.answersheet)
+            break
         if inp == "W":
-            print("This should start worker :DD")
+            worker = Worker()
+            worker.start()
+            break
         else:
             continue
 

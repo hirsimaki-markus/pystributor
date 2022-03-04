@@ -205,3 +205,38 @@ class Hub:
         print("Daemons done. Killing workers.")
         self.kill_workers()
 
+
+
+def main():
+    _ = system("cls||clear")
+    input("You probably should not be running this file. Press enter to continue anyways and run demo hub. Check demo.py for better example.\n")
+    ##### THIS STUFF HERE IS WHAT YOUR MAGICAL PROJECT SHOULD GIVE AS ARGUMENT
+    ##### TO PYSTRIBUTOR VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    # allways name the task as task. do what you want on the inside.
+    task = """
+    def task(my_argument):
+        # When creating your own task, always name it task
+        def _my_bad_prime_number_checker(number):
+            # Returns true if prime, false otherwise
+            if number <= 1:
+                return False
+            for i in range(2, number):
+                if (number % i) == 0:
+                    return False
+            return True
+        return _my_bad_prime_number_checker(my_argument)"""
+    # allways name th arguments args. should be list of tuples
+    args = [(i,) for i in range(10**6, (10**6)+500)]
+    ##### THIS STUFF HERE IS WHAT YOUR MAGICAL PROJECT SHOULD GIVE AS ARGUMENT
+    ##### TO PYSTRIBUTOR ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    hub = Hub(task, args)
+    hub.start()
+    print(hub.answersheet)
+
+
+
+
+
+
+if __name__ == "__main__":
+    main()

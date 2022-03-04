@@ -8,7 +8,7 @@ from json import loads, dumps
 from time import sleep
 from cryptography.fernet import Fernet
 
-class Hub:
+class Worker:
     def __init__(self, host="127.0.0.1", port=1337, buff_size=4096, fernetkey="xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="):
         self.host = host
         self.port = port
@@ -28,8 +28,9 @@ class Hub:
                 socket.connect((self.host, self.port))
             except Exception as e:
                 print("Cannot connect to hub yet, trying again in 1 second.")
-                #print(e)
-                sleep(1)
+                import traceback
+                traceback.print_exception(e)
+                #sleep(1)
                 input("venaan ikuisesti :DDDDD")
             else:
                 print("Connected to hub")
@@ -96,3 +97,39 @@ class Hub:
                 message = {"arg": argument, "ans": task_result}
                 encrypted_packet = self.fernet.encrypt(dumps(message).encode("utf-8"))
                 self.socket.sendall(encrypted_packet)
+
+
+
+
+
+
+
+
+
+
+
+
+
+def main():
+    _ = system("cls||clear")
+    input("You probably should not be running this file. Press enter to continue anyways and run demo worker. Check demo.py for better example.\n")
+    worker = Worker()
+    worker.start()
+
+
+
+
+
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
+
+
+
+
+
