@@ -26,12 +26,9 @@ class Worker:
         while True:
             try:
                 socket.connect((self.host, self.port))
-            except Exception as e:
+            except ConnectionRefusedError:
                 print("Cannot connect to hub yet, trying again in 1 second.")
-                import traceback
-                traceback.print_exception(e)
-                #sleep(1)
-                input("venaan ikuisesti :DDDDD")
+                sleep(1)
             else:
                 print("Connected to hub")
                 break

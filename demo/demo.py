@@ -27,6 +27,8 @@ def main():
     print("")
 
     while True:
+
+        print("yo")
         inp = input("Enter H to start hub from this demo. Enter W to start worker: ")
         if inp == "H":
             ##### THIS STUFF HERE IS WHAT YOUR MAGICAL PROJECT SHOULD GIVE AS ARGUMENT
@@ -53,9 +55,23 @@ def main():
             print(hub.answersheet)
             break
         if inp == "W":
-            worker = Worker()
-            worker.start()
+
+            import multiprocessing
+            def _worker_helper():
+                worker = Worker()
+                worker.start()
+
+            p1 = multiprocessing.Process(target=_worker_helper)
+            p2 = multiprocessing.Process(target=_worker_helper)
+            p3 = multiprocessing.Process(target=_worker_helper)
+            p1.start()
+            p2.start()
+            p3.start()
+            p1.join()
+            p2.join()
+            p3.join()
             break
+
         else:
             continue
 
