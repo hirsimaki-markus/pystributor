@@ -168,6 +168,7 @@ class Hub:
         self.socket.listen(0) # backlog = 0
         try:
             while True:
+                sleep(0.1) # fix busy waiting
                 try:
                     connection, address = self.socket.accept()
                 except BlockingIOError:
