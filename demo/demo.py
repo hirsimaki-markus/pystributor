@@ -6,8 +6,8 @@ This file is provided as a demonstration tool for using pystributor
 
 from os import system
 from pystributor_lib.pystributor import Hub, Worker
-
-
+from time import perf_counter
+import multiprocessing
 
 def main():
     print("This python file is provided as a demo which uses pystributor to")
@@ -28,7 +28,7 @@ def main():
 
     while True:
 
-        print("yo")
+        #print("yo")
         inp = input("Enter H to start hub from this demo. Enter W to start worker: ")
         if inp == "H":
             ##### THIS STUFF HERE IS WHAT YOUR MAGICAL PROJECT SHOULD GIVE AS ARGUMENT
@@ -47,29 +47,53 @@ def main():
                     return True
                 return _my_bad_prime_number_checker(my_argument)"""
             # allways name th arguments args. should be list of tuples
-            args = [(i,) for i in range(10**6, (10**6)+500)]
+            args = [(i,) for i in range(10**8, (10**8)+100)]
             ##### THIS STUFF HERE IS WHAT YOUR MAGICAL PROJECT SHOULD GIVE AS ARGUMENT
             ##### TO PYSTRIBUTOR ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-            hub = Hub(task, args)
-            hub.start()
-            print(hub.answersheet)
+
+            while True:
+                worker_count = input("Please enter worker count for pool: ")
+                try:
+                    worker_count = int(worker_count)
+                    if worker_count <= 0:
+                        continue
+                except ValueError:
+                    pass
+                else:
+                    break
+
+            hub = Hub(task, args, poolsize=worker_count)
+
+
+            timestamp = perf_counter()
+            hub.start() # this blocks until answersheet is done
+            print("Aikaa meni:", perf_counter()-timestamp)
+
+            #print(hub.answersheet)
             break
         if inp == "W":
+            while True:
+                worker_count = input("Please enter worker count for pool: ")
+                try:
+                    worker_count = int(worker_count)
+                    if worker_count <= 0:
+                        continue
+                except ValueError:
+                    pass
+                else:
+                    break
 
-            import multiprocessing
             def _worker_helper():
                 worker = Worker()
                 worker.start()
 
-            p1 = multiprocessing.Process(target=_worker_helper)
-            p2 = multiprocessing.Process(target=_worker_helper)
-            p3 = multiprocessing.Process(target=_worker_helper)
-            p1.start()
-            p2.start()
-            p3.start()
-            p1.join()
-            p2.join()
-            p3.join()
+            worker_processes = []
+            for i in range(worker_count): # spawn multiple worker processes
+                process = multiprocessing.Process(target=_worker_helper)
+                worker_processes.append(process)
+                process.start()
+            for worker in worker_processes: # wait until they are doned
+                worker.join()
             break
 
         else:

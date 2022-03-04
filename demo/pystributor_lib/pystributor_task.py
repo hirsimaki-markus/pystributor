@@ -22,16 +22,13 @@ def task(number):
 if __name__ == "__main__":
     from os import system
     _ = system("cls||clear") # clear screen on windows and unix
+    args = [(i,) for i in range(10**8, (10**8)+100)]
+    print("starting test by running task without pystributor...")
 
-    print("starting test...")
-
-    from pystributor_args import args
-
-    from time import time
-    alku = time()
+    from time import perf_counter
+    alku = perf_counter()
 
     for i in args:
-        #print(i)
         task(i[0])
 
-    print("kesto:", time()-alku)
+    print("kesto:", perf_counter()-alku)

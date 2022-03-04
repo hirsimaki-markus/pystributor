@@ -20,7 +20,7 @@ from textwrap import dedent
 
 
 class Hub:
-    def __init__(self, task, args, host="0.0.0.0", port=1337, buff_size=4096, fernetkey="xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="):
+    def __init__(self, task, args, poolsize=0, host="0.0.0.0", port=1337, buff_size=4096, fernetkey="xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="):
         self.task = dedent(task)
         self.args = args
         self.host = host
@@ -28,6 +28,7 @@ class Hub:
         self.buff_size = buff_size
         self.fernetkey = fernetkey
         self.answersheet = {}
+        self.poolsize = poolsize
 
         self.socket = None # initialized on socket startup
         self.fernet = None # initialized on socket startup
@@ -164,7 +165,9 @@ class Hub:
         pool = []
         print("Building worker pool. Waiting for workers to come online.", end="")
         print(" Start workers now.\n")
-        print("!!! Press <ctrl+c> to stop waiting for more workers to join !!!\n")
+        print("!!! Press <ctrl+c> to stop waiting for more workers to join !!!")
+        if self.poolsize != 0:
+            print("!!! Automatically stopping wait when", self.poolsize, "workers connected !!!")
         self.socket.listen(0) # backlog = 0
         try:
             while True:
@@ -179,6 +182,8 @@ class Hub:
                 pool.append([connection, address, None]) # worker status is undefine. it has not responded yet
                 print("Added worker to pool. Worker address is", address[0] + ":"
                     + str(address[1]) + ".", "Pool size is now", len(pool), )
+                if (self.poolsize != 0) and (len(pool) >= self.poolsize):
+                    break
         except KeyboardInterrupt:
             print("\n\nDone building worker pool. Pool size:", len(pool))
         self.pool = pool
