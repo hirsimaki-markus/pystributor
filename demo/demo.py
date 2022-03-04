@@ -47,7 +47,7 @@ def main():
                     return True
                 return _my_bad_prime_number_checker(my_argument)"""
             # allways name th arguments args. should be list of tuples
-            args = [(i,) for i in range(10**8, (10**8)+100)]
+            args = [(i,) for i in range(10**8, (10**8)+200)]
             ##### THIS STUFF HERE IS WHAT YOUR MAGICAL PROJECT SHOULD GIVE AS ARGUMENT
             ##### TO PYSTRIBUTOR ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -92,6 +92,7 @@ def main():
                 process = multiprocessing.Process(target=_worker_helper)
                 worker_processes.append(process)
                 process.start()
+                from time import sleep;sleep(1)
             for worker in worker_processes: # wait until they are doned
                 worker.join()
             break

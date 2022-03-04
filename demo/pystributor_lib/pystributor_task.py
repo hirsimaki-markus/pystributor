@@ -22,7 +22,7 @@ def task(number):
 if __name__ == "__main__":
     from os import system
     _ = system("cls||clear") # clear screen on windows and unix
-    args = [(i,) for i in range(10**8, (10**8)+100)]
+    args = [(i,) for i in range(10**8, (10**8)+200)]
     print("starting test by running task without pystributor...")
 
     from time import perf_counter
