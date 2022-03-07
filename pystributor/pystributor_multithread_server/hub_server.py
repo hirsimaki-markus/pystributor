@@ -138,6 +138,7 @@ def main(min_pool_size):
     check_workers_thread.start()
     print("Main entering while sleep")
     while(len(worker_pool) < min_pool_size):
+        print("Waiting more workers to join the pool")
         sleep(5)
     print("Enough pool gathered. Starting calculations")
     arguments_for_workers = get_args()
@@ -153,4 +154,4 @@ def main(min_pool_size):
 
 if __name__ == "__main__":
     _ = system("cls||clear") # clear screen on windows and unix
-    main(6)
+    main(1)

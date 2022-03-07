@@ -172,7 +172,7 @@ def task(number):
 
 def processing_thread(arguments, connection):
     #print("Starting processing")
-    #answer = task(arguments)
+    answer = task(arguments)
     exec(TASK + f"x = task({arguments})")
     answer = locals()['x']
     send_json_message({"ans": answer, "param": arguments}, connection)
