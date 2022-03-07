@@ -92,7 +92,7 @@ def main():
                 process = multiprocessing.Process(target=_worker_helper)
                 worker_processes.append(process)
                 process.start()
-                from time import sleep;sleep(1)
+                #from time import sleep;sleep(1)
             for worker in worker_processes: # wait until they are doned
                 worker.join()
             break
