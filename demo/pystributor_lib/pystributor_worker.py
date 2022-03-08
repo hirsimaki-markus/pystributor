@@ -65,12 +65,16 @@ class Worker:
         except OSError as e:
             if e.errno == 107:
                 pass # socket already closed
+    
+    def send_json_message(self, json_str):
+        encrypted_packet = self.fernet.encrypt(dumps(json_str).encode("utf-8"))
+        self.socket.sendall(encrypted_packet)
 
     def start(self):
         print("Starting worker. Trying to connect to the hub on adress:", self.host, ", port",  self.port)
         self.initialize_fernet()
         self.initialize_worker_socket()
-        atexit_register(self.exit_handler)
+        #atexit_register(self.exit_handler)
         while True:
             packet_encrypted = self.recvall_worker()
             if packet_encrypted == b'':
@@ -79,42 +83,32 @@ class Worker:
             packet = self.fernet.decrypt(packet_encrypted)
             # client and server in lockstep > can pick single "message" from stream
             message = loads(packet.decode("utf-8"))
-            if "task" in message: # sending back back ok since task was received
-                self.task = message["task"]
-                message = {"task": "ok"}
-                encrypted_packet = self.fernet.encrypt(dumps(message).encode("utf-8"))
-                self.socket.sendall(encrypted_packet)
-                print("Received and digested task. Ack sent.")
-            elif "arg" in message: # sending back and answer to an argument
+            
+            if "arg" in message: # sending back and answer to an argument
                 argument = message["arg"]
                 # wicked smaht vvvvvvv
                 exec(self.task + f"\n\nx = task({argument})")
                 task_result = locals()['x']
                 # wicked smath ^^^^^^
                 message = {"arg": argument, "ans": task_result}
-                encrypted_packet = self.fernet.encrypt(dumps(message).encode("utf-8"))
-                self.socket.sendall(encrypted_packet)
+                self.send_json_message(message)
+            elif "task" in message: # sending back back ok since task was received
+                self.task = message["task"]
+                message = {"task": "ok"}
+                self.send_json_message(message)
+                print("Received and digested task. Ack sent.")
+            elif "kill" in message:
+                print("Server requested killing this worker :(")
+                break
 
-
-
-
-
-
-
-
-
-
-
+    
 
 
 def main():
     _ = system("cls||clear")
-    input("You probably should not be running this file. Press enter to continue anyways and run demo worker. Check demo.py for better example.\n")
+    print("Starting a standalone worker.")
     worker = Worker()
     worker.start()
-
-
-
 
 
 

@@ -27,13 +27,11 @@ def main():
     print("")
 
     while True:
-
-        #print("yo")
-        inp = input("Enter H to start hub from this demo. Enter W to start worker: ")
+        inp = input("Enter H to start a hub from this demo. Enter W to start worker(s) on this PC: ")
         if inp == "H":
             ##### THIS STUFF HERE IS WHAT YOUR MAGICAL PROJECT SHOULD GIVE AS ARGUMENT
             ##### TO PYSTRIBUTOR VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-            # allways name the task as task. do what you want on the inside.
+            # allways name the task function as task. Do what you want on the inside.
             task = """
             def task(my_argument):
                 # When creating your own task, always name it task
@@ -73,7 +71,7 @@ def main():
             break
         if inp == "W":
             while True:
-                worker_count = input("Please enter worker count for pool: ")
+                worker_count = input("Please enter nubmer of workers you want to create: ")
                 try:
                     worker_count = int(worker_count)
                     if worker_count <= 0:
@@ -88,6 +86,11 @@ def main():
                 worker.start()
 
             worker_processes = []
+            import os
+            print(os.name)
+            if os.name == 'nt':
+                multiprocessing.set_start_method('spawn')
+            
             for i in range(worker_count): # spawn multiple worker processes
                 process = multiprocessing.Process(target=_worker_helper)
                 worker_processes.append(process)

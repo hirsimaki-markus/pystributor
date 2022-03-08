@@ -17,7 +17,7 @@ from os import system
 from json import loads, dumps
 from cryptography.fernet import Fernet
 from textwrap import dedent
-
+from time import time
 
 class Hub:
     def __init__(self, task, args, poolsize=0, host="0.0.0.0", port=1337, buff_size=4096, fernetkey="xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="):
@@ -35,6 +35,7 @@ class Hub:
         self.pool = None # initialized on socket startup
         self.t1 = None # initialized on socket startup
         self.t2 = None # initialized on socket startup
+        self.total_time = None #given by super calculator when all finished
 
     def initialize_server_socket(self):
         """Returns a configured socket"""
@@ -42,6 +43,7 @@ class Hub:
         socket.setblocking(False) # blocking would prevent ctrl+c on windows
         socket.bind((self.host, self.port))
         self.socket = socket
+        print("Socket initialized. Listening on adress:", self.host, ", port",  self.port)
 
     def exit_handler(self):
         try:
@@ -95,6 +97,7 @@ class Hub:
             """raised to close nested loop"""
             pass
         arguments_for_workers = self.args
+        self.total_time = time()
         for argument in arguments_for_workers: # for all arguments
             try:
                 while True: # until argument is sent
@@ -130,12 +133,12 @@ class Hub:
                     # task was received succesfully
                     if message["task"] == "ok":
                         self.pool[worker_idx][2] = True
-                elif "arg" in message:
+                elif "ans" in message:
                     # received answer to a calculation
-                    question = message["arg"]
+                    arguments = message["arg"]
                     answer = message["ans"]
                     self.pool[worker_idx][2] = True
-                    self.answersheet[question] = answer
+                    self.answersheet[arguments] = answer
             else: # connection is likely closing since no data
                 print("Closing worker connection. Worker dropped from pool.")
                 connection_selector.unregister(connection)
@@ -151,6 +154,7 @@ class Hub:
                 worker_idx = selectorkey.data
                 _selector_read_handler(connection, self.pool, worker_idx)
             if arg_count == len(self.answersheet):
+                self.total_time = time() - self.total_time
                 break
         print("Listener daemon done. All answers received.")
 
@@ -232,12 +236,16 @@ def main():
             return True
         return _my_bad_prime_number_checker(my_argument)"""
     # allways name th arguments args. should be list of tuples
-    args = [(i,) for i in range(10**6, (10**6)+500)]
+    args = [(i,) for i in range(10**8, (10**8)+1000)]
     ##### THIS STUFF HERE IS WHAT YOUR MAGICAL PROJECT SHOULD GIVE AS ARGUMENT
     ##### TO PYSTRIBUTOR ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     hub = Hub(task, args)
+    start_time = time()
     hub.start()
+    print("Everything calculated. Total time:", str(time()-start_time))
     print(hub.answersheet)
+    print(len(hub.answersheet))
+    print(hub.total_time)
 
 
 

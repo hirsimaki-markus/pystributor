@@ -138,7 +138,7 @@ def main(min_pool_size):
     check_workers_thread.start()
     print("Main entering while sleep")
     while(len(worker_pool) < min_pool_size):
-        print("Waiting more workers to join the pool")
+        print(f"Waiting {min_pool_size - worker_pool} more workers to join the pool")
         sleep(5)
     print("Enough pool gathered. Starting calculations")
     arguments_for_workers = get_args()
