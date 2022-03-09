@@ -20,7 +20,7 @@ from textwrap import dedent
 from time import time
 
 class Hub:
-    def __init__(self, task, args, poolsize=0, host="0.0.0.0", port=1337, buff_size=4096, fernetkey="xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="):
+    def __init__(self, task, args, poolsize=1, host="0.0.0.0", port=1337, buff_size=4096, fernetkey="xlHo5FYF1MuSHnvb_QJPWhEjOTCO5Ioennu_yJtQXYM="):
         self.task = dedent(task)
         self.args = args
         self.host = host
@@ -214,6 +214,7 @@ class Hub:
 
         print("Daemons done. Killing workers.")
         self.kill_workers()
+        self.socket.close()
 
 
 
@@ -240,9 +241,7 @@ def main():
     ##### THIS STUFF HERE IS WHAT YOUR MAGICAL PROJECT SHOULD GIVE AS ARGUMENT
     ##### TO PYSTRIBUTOR ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     hub = Hub(task, args)
-    start_time = time()
     hub.start()
-    print("Everything calculated. Total time:", str(time()-start_time))
     print(hub.answersheet)
     print(len(hub.answersheet))
     print(hub.total_time)

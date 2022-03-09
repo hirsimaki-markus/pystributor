@@ -25,6 +25,7 @@ def main():
     print("")
     print("")
     print("")
+    
 
     while True:
         inp = input("Enter H to start a hub from this demo. Enter W to start worker(s) on this PC: ")
@@ -88,16 +89,16 @@ def main():
             worker_processes = []
             import os
             print(os.name)
-            if os.name == 'nt':
-                multiprocessing.set_start_method('spawn')
+            
             
             for i in range(worker_count): # spawn multiple worker processes
                 process = multiprocessing.Process(target=_worker_helper)
                 worker_processes.append(process)
                 process.start()
+
                 #from time import sleep;sleep(1)
-            for worker in worker_processes: # wait until they are doned
-                worker.join()
+            #for worker in worker_processes: # wait until they are doned
+            #    worker.join()
             break
 
         else:
@@ -106,6 +107,7 @@ def main():
 
 if __name__ == "__main__":
     _ = system("cls||clear") # clear screen on windows and unix
+    multiprocessing.set_start_method('spawn')
     main()
 
 

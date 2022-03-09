@@ -1,5 +1,5 @@
 from os import system
-from pystributor_lib.pystributor import Hub, Worker
+from pystributor import Hub, Worker
 from time import perf_counter
 import multiprocessing as mp
 import statistics
@@ -26,8 +26,8 @@ task_str = """
 
 
 def get_args(case):
-    cases = [(1000, 10000), (10**6, 10**6+1000), (10**7, 10**7+1000), (10**8, (10**8)+1000), (10**9, (10**9)+1000)]
-    #cases = [(1, 100), (10**1, 10**1+100), (10**2, 10**2+100), (10**3, (10**3)+100), (10**4, (10**4)+100)]
+    #cases = [(1000, 10000), (10**6, 10**6+1000), (10**7, 10**7+1000), (10**8, (10**8)+1000), (10**9, (10**9)+1000)]
+    cases = [(1, 100), (10**1, 10**1+100), (10**2, 10**2+100), (10**3, (10**3)+100), (10**4, (10**4)+100)]
     start, end = cases[case]
     return [(i,) for i in range(start, end)]
 
@@ -68,7 +68,7 @@ def run_all_bare_function_cases():
     bare_function_times = []
     for i in range(5):
         time = run_average_2_for_base(i)
-        bare_function_times.append((f"Case {i}", time))
+        bare_function_times.append(f"Case {i}", time)
     return bare_function_times
     
 
@@ -92,11 +92,13 @@ def local_workers(worker_num, case):
 
 def measure_local_workers():
     local_worker_times = []
-    for worker_num in range(1,6):
+    for worker_num in range(5):
         for case_num in range(5):
             time = local_workers(worker_num, case_num)
-            local_worker_times.append((f"{worker_num} workers", f"Case {case_num}", time))
+            local_worker_times.append(f"{worker_num} workers", f"Case {case_num}", time)
     return local_worker_times
+
+
 
 
 def _worker_helper():
@@ -104,13 +106,10 @@ def _worker_helper():
     worker.start()
 
 def main():
-    measure_start = perf_counter()
     bare_times = run_all_bare_function_cases()
     pystributor_times = measure_local_workers()
     print(bare_times)
     print(pystributor_times)
-    print("Mittauksiin meni ", perf_counter()-measure_start)
-
 
 if __name__ == "__main__":
     _ = system("cls||clear") # clear screen on windows and unix

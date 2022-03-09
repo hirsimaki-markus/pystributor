@@ -21,6 +21,7 @@ class Hub:
         self.fernetkey = fernetkey
         self.answersheet = {}
         self.poolsize = poolsize
+        self.max_pool_size = 12
         self.pool = []
         self.keep_pool_alive = keep_pool_alive #Don't close the worker processes after calculations are done
 
@@ -113,6 +114,7 @@ class Hub:
     def handle_new_workers(self):
         id = 0
         while True:
+            #if len(self.pool) < self.max_pool_size: #dont do this, adds awful lot of time
             print("Waiting for new workers to connect...")
             connection, address = self.socket.accept()
             print(f"Connected with a new worker {str(address)}")
@@ -127,12 +129,13 @@ class Hub:
             worker_thread = threading.Thread(target=self.manage_worker_thread, args=(list_id,))
             worker_thread.start()
             print(f"Worker {worker_id} added to the pool.")
-            #sleep(1)
+            #sleep(0.5)
 
     def ping_workers(self):
         while True:
             sleep(60)
             print(self.answersheet)
+            print(f"Answers gathered:{len(self.answersheet)}")
             print(len(self.pool))
             if len(self.pool) > 0:
                 for worker in self.pool:
@@ -168,7 +171,7 @@ class Hub:
         #distribute_task()
         number_of_arguments = len(self.args)
         self.total_time = time() #use the total time as start time for now
-        while len(self.answersheet) < number_of_arguments:
+        while len(self.answersheet) < number_of_arguments: #If worker is dropped at the end we might need to loop arguments again
             if len(self.args) != 0:
                 while len(self.args) > 0:
                     for worker in self.pool: # until worker is found
@@ -206,9 +209,9 @@ class Hub:
         print("Everything calculated. Total time:", self.total_time)
         if self.keep_pool_alive == False:
             for worker in self.pool:
-                    if time() - worker.last_answer > 120: #TODO: Check heartbeat time vs last answer
-                        self.send_json({"kill": "sorry"}, worker.connection)
+                self.send_json({"kill": "sorry"}, worker.connection)
             print("Sent shutdown messages to all workers")
+        self.socket.close() #TODO: figure out how to close all threads if not run from main function
 
 
 def main():
@@ -230,7 +233,8 @@ def main():
             return True
         return _my_bad_prime_number_checker(my_argument)"""
     # allways name th arguments args. should be list of tuples
-    args = [(i,) for i in range(10**8, (10**8)+1000)]
+    #args = [(i,) for i in range(10**8, (10**8)+1000)]
+    args = [(i,) for i in range(1000, 10000)]
     ##### THIS STUFF HERE IS WHAT YOUR MAGICAL PROJECT SHOULD GIVE AS ARGUMENT
     ##### TO PYSTRIBUTOR ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     hub = Hub(task, args, 12, False)
