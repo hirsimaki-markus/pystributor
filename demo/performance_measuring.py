@@ -92,7 +92,7 @@ def local_workers(worker_num, case):
 
 def measure_local_workers():
     local_worker_times = []
-    for worker_num in range(1,6):
+    for worker_num in range(27,29):
         for case_num in range(5):
             time = local_workers(worker_num, case_num)
             local_worker_times.append((f"{worker_num} workers", f"Case {case_num}", time))
@@ -105,9 +105,9 @@ def _worker_helper():
 
 def main():
     measure_start = perf_counter()
-    bare_times = run_all_bare_function_cases()
+    #bare_times = run_all_bare_function_cases()
     pystributor_times = measure_local_workers()
-    print(bare_times)
+    #print(bare_times)
     print(pystributor_times)
     print("Mittauksiin meni ", perf_counter()-measure_start)
 
