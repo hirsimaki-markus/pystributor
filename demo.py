@@ -4,7 +4,7 @@
 This file is provided as a demonstration tool for using pystributor
 """
 
-from pystributor_lib.pystributor import Hub, Worker
+from pystributor.pystributor import Hub, Worker
 from time import perf_counter
 from os import system, name
 import multiprocessing

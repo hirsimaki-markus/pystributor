@@ -1,5 +1,5 @@
 from os import system
-from pystributor_lib.pystributor import Hub, Worker
+from pystributor.pystributor import Hub, Worker
 from time import perf_counter
 import multiprocessing as mp
 import statistics
@@ -70,7 +70,7 @@ def run_all_bare_function_cases():
         time = run_average_2_for_base(i)
         bare_function_times.append((f"Case {i}", time))
     return bare_function_times
-    
+
 
 def local_workers(worker_num, case):
     workers = []
@@ -78,9 +78,9 @@ def local_workers(worker_num, case):
         worker = mp.Process(target=_worker_helper)
         workers.append(worker)
         worker.start()
-        
 
-    
+
+
     hub = Hub(task_str, get_args(case), worker_num)
     timestamp = perf_counter()
     hub.start() # this blocks until answersheet is done

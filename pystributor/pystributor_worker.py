@@ -113,7 +113,6 @@ class Worker:
                 print("Server requested killing this worker :(")
                 break
 
-
 def main():
     _ = system("cls||clear")
     print("You probably should not be running this file.")
@@ -126,7 +125,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
