@@ -62,9 +62,14 @@ def main():
             timestamp = perf_counter()
             hub.start() # this blocks until answersheet is done
             print("Time spent (including waiting for workers):", perf_counter()-timestamp)
-            print("Excerpt from hub.answersheet:")
-            for arg, ans in list(hub.answersheet.items())[:10]:
-                print(arg, ans)
+            print("\nSelected excerpt from hub.answersheet:")
+            print_counter = 0
+            for arg, ans in hub.answersheet.items():
+                if ans:
+                    print(arg, "is prime.")
+                    print_counter += 1
+                    if print_counter >= 30:
+                        break
             break
         if inp == "W":
             while True: # loop for valid input
