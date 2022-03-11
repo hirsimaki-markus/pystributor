@@ -4,10 +4,25 @@
 This file is provided as a demonstration tool for using pystributor
 """
 
-from os import system
 from pystributor_lib.pystributor import Hub, Worker
 from time import perf_counter
+from os import system, name
 import multiprocessing
+
+SAMPLE_ARGS = [(i,) for i in range(10**8, (10**8)+200)]
+SAMPLE_TASK = """
+    def task(my_argument):
+        # When creating your own task, always name it task
+        def _my_bad_prime_number_checker(number):
+            # Returns true if prime, false otherwise
+            if number <= 1:
+                return False
+            for i in range(2, number):
+                if (number % i) == 0:
+                    return False
+            return True
+        return _my_bad_prime_number_checker(my_argument)
+"""
 
 def main():
     print("This python file is provided as a demo which uses pystributor to")
@@ -21,37 +36,19 @@ def main():
     print("distribute (in order of 100s or 1000s). Each argument should")
     print("be maximally CPU intensive when processed on worker.")
     print("")
-    print("You should take a look inside this demo after trying it out.")
+    print("You should take a look inside this demo file after trying it out.")
     print("")
     print("")
     print("")
-    
 
     while True:
-        inp = input("Enter H to start a hub from this demo. Enter W to start worker(s) on this PC: ")
+        print("Enter H to start a hub. Enter W to start worker(s)")
+        print("(You will have to start at least two instances of this demo,")
+        print("one for hub and one for workers)")
+        inp = input(": ")
         if inp == "H":
-            ##### THIS STUFF HERE IS WHAT YOUR MAGICAL PROJECT SHOULD GIVE AS ARGUMENT
-            ##### TO PYSTRIBUTOR VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-            # allways name the task function as task. Do what you want on the inside.
-            task = """
-            def task(my_argument):
-                # When creating your own task, always name it task
-                def _my_bad_prime_number_checker(number):
-                    # Returns true if prime, false otherwise
-                    if number <= 1:
-                        return False
-                    for i in range(2, number):
-                        if (number % i) == 0:
-                            return False
-                    return True
-                return _my_bad_prime_number_checker(my_argument)"""
-            # allways name th arguments args. should be list of tuples
-            args = [(i,) for i in range(10**8, (10**8)+200)]
-            ##### THIS STUFF HERE IS WHAT YOUR MAGICAL PROJECT SHOULD GIVE AS ARGUMENT
-            ##### TO PYSTRIBUTOR ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-            while True:
-                worker_count = input("Please enter worker count for pool: ")
+            while True: # loop for valid input
+                worker_count = input("Please enter how many worker connections to wait for: ")
                 try:
                     worker_count = int(worker_count)
                     if worker_count <= 0:
@@ -61,18 +58,17 @@ def main():
                 else:
                     break
 
-            hub = Hub(task, args, poolsize=worker_count)
-
-
+            hub = Hub(SAMPLE_TASK, SAMPLE_ARGS, poolsize=worker_count)
             timestamp = perf_counter()
             hub.start() # this blocks until answersheet is done
-            print("Aikaa meni:", perf_counter()-timestamp)
-
-            #print(hub.answersheet)
+            print("Time spent (including waiting for workers):", perf_counter()-timestamp)
+            print("Excerpt from hub.answersheet:")
+            for arg, ans in list(hub.answersheet.items())[:10]:
+                print(arg, ans)
             break
         if inp == "W":
-            while True:
-                worker_count = input("Please enter nubmer of workers you want to create: ")
+            while True: # loop for valid input
+                worker_count = input("Please enter the number of worker procsesses you want to create: ")
                 try:
                     worker_count = int(worker_count)
                     if worker_count <= 0:
@@ -87,27 +83,21 @@ def main():
                 worker.start()
 
             worker_processes = []
-            import os
-            print(os.name)
-            
-            
+            if name == "nt":
+                # windows compability. default is to fork in windows.
+                multiprocessing.set_start_method("spawn")
+
             for i in range(worker_count): # spawn multiple worker processes
                 process = multiprocessing.Process(target=_worker_helper)
                 worker_processes.append(process)
                 process.start()
-
-                #from time import sleep;sleep(1)
-            #for worker in worker_processes: # wait until they are doned
-            #    worker.join()
             break
-
         else:
             continue
 
 
 if __name__ == "__main__":
     _ = system("cls||clear") # clear screen on windows and unix
-    multiprocessing.set_start_method('spawn')
     main()
 
 
@@ -117,3 +107,5 @@ if __name__ == "__main__":
 # TÖYT TÄHÄN ASTI: 24H PER NASSU
 # ja makelle ehkä 10h lisää
 # ja patrikille 4h
+# ja molemmille 4h
+# ja patrikille 6h
