@@ -209,7 +209,7 @@ class Hub:
         self.pool = pool
 
     def kill_workers(self):
-        """Send message to each worker to exit"""
+        """Close connections for workers"""
         for i, worker in enumerate(self.pool):
             connection, _address, _sready = worker
             connection.close()
