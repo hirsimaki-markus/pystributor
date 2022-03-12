@@ -114,8 +114,8 @@ class Worker:
                 break
 
 def main():
-    _ = system("cls||clear")
-    worker = Worker()
+    #_ = system("cls||clear")
+    worker = Worker("192.168.1.70")
     worker.start()
 
 
