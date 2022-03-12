@@ -26,8 +26,9 @@ SAMPLE_TASK = """
 """
 
 def _worker_helper():
-                worker = Worker()
-                worker.start()
+    """This helper must be placed in this scope for windows compability"""
+    worker = Worker()
+    worker.start()
 
 def main():
     print("This python file is provided as a demo which uses pystributor to")
@@ -88,16 +89,23 @@ def main():
                 else:
                     break
 
-            
+
 
             worker_processes = []
 
 
-            for i in range(worker_count): # spawn multiple worker processes
-                process = multiprocessing.Process(target=_worker_helper)
-                worker_processes.append(process)
-                process.start()
-            break
+            while True: # likanen tunkki. 5 riviä muutoksia tässä.
+                for i in range(worker_count): # spawn multiple worker processes #!!!
+                    process = multiprocessing.Process(target=_worker_helper) #!!!
+                    worker_processes.append(process) #!!!
+                    process.start() #!!!
+
+                while True: # block until all workers done
+                    from time import sleep
+                    sleep(1)
+                    if all([not i.is_alive() for i in worker_processes]):
+                        break
+            break # TÄMÄ PITÄÄ SÄILYTÄÄ #!!!!!
         else:
             continue
 
@@ -119,3 +127,4 @@ if __name__ == "__main__":
 # ja patrikille 4h
 # ja molemmille 4h
 # ja patrikille 6h
+# ja yhdessä 4h
