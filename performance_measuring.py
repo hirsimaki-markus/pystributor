@@ -126,14 +126,34 @@ def measure_external_and_local_workers(worker_num):
         worker_times.append((f"{worker_num} workers", f"Case {case_num}", time))
     return worker_times
 
+def external_workers(worker_num, case):
+
+    hub = Hub(task_str, get_args(case), worker_num)
+    timestamp = perf_counter()
+    hub.start() # this blocks until answersheet is done
+    timestamp = perf_counter() - timestamp
+    print("Aikaa meni:", timestamp)
+    #for i in range(worker_num):
+    #    i.join()
+    return timestamp
+
+def measure_external_workers(worker_num):
+    worker_times = []
+    for case_num in range(7): #only new cases 0, 1, 2,
+        time = external_workers(worker_num, case_num)
+        worker_times.append((f"{worker_num} workers", f"Case {case_num}", time))
+    return worker_times
+
 def main():
     measure_start = perf_counter()
     #bare_times = run_all_bare_function_cases()
     #pystributor_times = measure_local_workers()
     #print(bare_times)
     #print(pystributor_times)
-    scalability_times = measure_external_and_local_workers(24)
-    print(scalability_times)
+    #scalability_times = measure_external_and_local_workers(24)
+    #print(scalability_times)
+    external_times = measure_external_workers(12)
+    print(external_times)
     print("Mittauksiin meni ", perf_counter()-measure_start)
 
 
