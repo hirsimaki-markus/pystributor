@@ -26,7 +26,7 @@ task_str = """
 
 
 def get_args(case):
-    cases = [(1000, 10000), (10**6, 10**6+1000), (10**7, 10**7+1000), (10**8, (10**8)+1000), (10**9, (10**9)+1000)]
+    cases = [(10**3, 10**3+1000), (10**4, 10**4+1000), (10**5, 10**5+1000), (10**6, 10**6+1000), (10**7, 10**7+1000), (10**8, (10**8)+1000), (10**9, (10**9)+1000)]
     #cases = [(1, 100), (10**1, 10**1+100), (10**2, 10**2+100), (10**3, (10**3)+100), (10**4, (10**4)+100)]
     start, end = cases[case]
     return [(i,) for i in range(start, end)]
@@ -66,7 +66,7 @@ def run_average_2_for_base(case_number):
 
 def run_all_bare_function_cases():
     bare_function_times = []
-    for i in range(5):
+    for i in range(7):
         time = run_average_2_for_base(i)
         bare_function_times.append((f"Case {i}", time))
     return bare_function_times
@@ -92,8 +92,8 @@ def local_workers(worker_num, case):
 
 def measure_local_workers():
     local_worker_times = []
-    for worker_num in range(27,29):
-        for case_num in range(5):
+    for worker_num in range(1,25):
+        for case_num in range(7): #only new cases 0, 1, 2,
             time = local_workers(worker_num, case_num)
             local_worker_times.append((f"{worker_num} workers", f"Case {case_num}", time))
     return local_worker_times
@@ -103,12 +103,37 @@ def _worker_helper():
     worker = Worker()
     worker.start()
 
+def external_and_local_workers(worker_num, case):
+    workers = []
+    for i in range(12):
+        worker = mp.Process(target=_worker_helper)
+        workers.append(worker)
+        worker.start()
+
+    hub = Hub(task_str, get_args(case), worker_num)
+    timestamp = perf_counter()
+    hub.start() # this blocks until answersheet is done
+    timestamp = perf_counter() - timestamp
+    print("Aikaa meni:", timestamp)
+    #for i in range(worker_num):
+    #    i.join()
+    return timestamp
+
+def measure_external_and_local_workers(worker_num):
+    worker_times = []
+    for case_num in range(7): #only new cases 0, 1, 2,
+        time = external_and_local_workers(worker_num, case_num)
+        worker_times.append((f"{worker_num} workers", f"Case {case_num}", time))
+    return worker_times
+
 def main():
     measure_start = perf_counter()
     #bare_times = run_all_bare_function_cases()
-    pystributor_times = measure_local_workers()
+    #pystributor_times = measure_local_workers()
     #print(bare_times)
-    print(pystributor_times)
+    #print(pystributor_times)
+    scalability_times = measure_external_and_local_workers(24)
+    print(scalability_times)
     print("Mittauksiin meni ", perf_counter()-measure_start)
 
 

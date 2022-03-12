@@ -8,6 +8,7 @@ from pystributor.pystributor import Hub, Worker
 from time import perf_counter
 from os import system, name
 import multiprocessing
+from multiprocessing.managers import BaseManager
 
 SAMPLE_ARGS = [(i,) for i in range(10**8, (10**8)+200)]
 SAMPLE_TASK = """
@@ -88,9 +89,7 @@ def main():
                 worker.start()
 
             worker_processes = []
-            if name == "nt":
-                # windows compability. default is to fork in windows.
-                multiprocessing.set_start_method("spawn")
+
 
             for i in range(worker_count): # spawn multiple worker processes
                 process = multiprocessing.Process(target=_worker_helper)
@@ -103,6 +102,10 @@ def main():
 
 if __name__ == "__main__":
     _ = system("cls||clear") # clear screen on windows and unix
+    multiprocessing.set_start_method('spawn')
+    #if name == "nt":
+    #    # windows compability. default is to fork in windows.
+    #    multiprocessing.set_start_method("spawn")
     main()
 
 
