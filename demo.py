@@ -25,6 +25,10 @@ SAMPLE_TASK = """
         return _my_bad_prime_number_checker(my_argument)
 """
 
+def _worker_helper():
+                worker = Worker()
+                worker.start()
+
 def main():
     print("This python file is provided as a demo which uses pystributor to")
     print("perform an example task. Different systems will have different")
@@ -84,9 +88,7 @@ def main():
                 else:
                     break
 
-            def _worker_helper():
-                worker = Worker()
-                worker.start()
+            
 
             worker_processes = []
 
