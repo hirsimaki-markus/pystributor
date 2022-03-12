@@ -2,7 +2,9 @@
 
 
 """
-Hub class is used to spawn hub objects for pystributor
+Hub class is used to spawn hub objects for pystributor. Polling the results
+from hub.answersheet is left to the end user if they are to be examined
+during the operation of hub as it is blocking.
 
 Important: worker pool data type is currently implemented as 2D list
 [[connection, address, is_ready], [...], [...]]
