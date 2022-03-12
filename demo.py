@@ -121,10 +121,3 @@ if __name__ == "__main__":
 
 
 
-
-# TÖYT TÄHÄN ASTI: 24H PER NASSU
-# ja makelle ehkä 10h lisää
-# ja patrikille 4h
-# ja molemmille 4h
-# ja patrikille 6h
-# ja yhdessä 4h
