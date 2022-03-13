@@ -1,0 +1,3 @@
+Please note, that this Docker demo is merely a confirmation that the pystributor can be used containers, not a very polished experience.
+
+Therefore, before building you should change the IP address to you local IP from pystributor_worker.py, line 118.
